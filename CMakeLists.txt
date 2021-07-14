@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.0)
 
-project(packet-manager LANGUAGES CXX)
+project(package-manager LANGUAGES CXX)
 
 # TODO: c++ standard
 #set(CMAKE_CXX_STANDARD 17)
