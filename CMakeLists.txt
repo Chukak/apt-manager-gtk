@@ -6,10 +6,13 @@ project(packet-manager LANGUAGES CXX)
 #set(CMAKE_CXX_STANDARD 17)
 
 set(SOURCE_FILES
-    src/main.cpp)
+    src/main.cpp
+    src/cache.cpp
+    src/utils.cpp)
 
 set(PRIVATE_HEADER_FILES
-    )
+    src/cache.h
+    src/utils.h)
 
 set(CXX_PROJECT_COMPILE_FLAGS -g -O -fstack-protector
     -Wall -pedantic -Wextra -Wcast-align -Wcomment -Wconversion
@@ -44,7 +47,9 @@ list(APPEND CXX_PROJECT_INCLUDE_DIRECTORIES ${GTKMM_INCLUDE_DIRS})
 list(APPEND CXX_PROJECT_COMPILE_DEFINITIONS ${GTKMM_CFLAGS_OTHER})
 
 # libapt-pkg
-find_library(apt-pkg REQUIRED)
+find_library(APT_PKG_LIBRARIES NAMES apt-pkg REQUIRED)
+
+list(APPEND CXX_PROJECT_LINK_FLAGS ${APT_PKG_LIBRARIES})
 
 add_executable(${PROJECT_NAME} ${SOURCE_FILES} ${PRIVATE_HEADER_FILES})
 target_compile_options(${PROJECT_NAME} PUBLIC ${CXX_PROJECT_COMPILE_FLAGS})
