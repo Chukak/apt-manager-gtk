@@ -1,6 +1,8 @@
 #ifndef UTILS_H
 #define UTILS_H
 
+#include <apt-pkg/configuration.h>
+
 namespace utils
 {
 /**
@@ -14,6 +16,11 @@ bool InitPkgConfiguration();
  * Prints the last error.
  */
 void PrintPkgError();
+/**
+ * @brief GetPkgConfig
+ * @return The configuration object.
+ */
+Configuration& GetPkgConfig();
 
 } // namespace utils
 

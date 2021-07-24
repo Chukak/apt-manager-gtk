@@ -1,7 +1,6 @@
 #include "utils.h"
 
 #include <apt-pkg/init.h>
-#include <apt-pkg/configuration.h>
 #include <apt-pkg/pkgsystem.h>
 #include <apt-pkg/error.h>
 
@@ -29,6 +28,11 @@ void PrintPkgError()
 	if(_error->PendingError()) {
 		_error->DumpErrors(std::cerr);
 	}
+}
+
+Configuration& GetPkgConfig()
+{
+	return *_config;
 }
 
 } // namespace utils
