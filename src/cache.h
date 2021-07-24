@@ -15,10 +15,10 @@ class Cache
   public:
     Cache();
     /**
-     * @brief isValid
+     * @brief IsValid
      * @return The cache correctness.
      */
-    inline bool isValid() const { return _isValid; };
+    inline bool IsValid() const { return _isValid; };
 
   private:
     bool _isValid{false};
@@ -42,8 +42,8 @@ struct Candidate
 
 enum PackageFilter
 {
-	CurrentPackages,
-	NewPackages
+	InstalledPackages,
+	NewAvailablePackages
 };
 
 /**
@@ -56,7 +56,12 @@ class CandidateList : public std::list<Candidate>
 									const CandidateList& candidateList);
 
   public:
-    CandidateList(const Cache& cache);
+    CandidateList(const Cache& cache, PackageFilter filterOption);
+
+  private:
+    void filterInstalledPkgs(const Cache& cache);
+    void filterNewAvailablePkgs(const Cache& cache);
+    void pushCandidate(pkgPolicy* policy, pkgCache::PkgIterator packet);
 };
 
 } // namespace package

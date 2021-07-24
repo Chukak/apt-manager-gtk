@@ -8,11 +8,13 @@ project(package-manager LANGUAGES CXX)
 set(SOURCE_FILES
     src/main.cpp
     src/cache.cpp
-    src/utils.cpp)
+    src/utils.cpp
+    src/textacquirestatus.cpp)
 
 set(PRIVATE_HEADER_FILES
     src/cache.h
-    src/utils.h)
+    src/utils.h
+    src/textacquirestatus.h)
 
 set(CXX_PROJECT_COMPILE_FLAGS -g -O -fstack-protector
     -Wall -pedantic -Wextra -Wcast-align -Wcomment -Wconversion
@@ -20,7 +22,7 @@ set(CXX_PROJECT_COMPILE_FLAGS -g -O -fstack-protector
     -Wmissing-braces -Wmissing-field-initializers
     -Wmissing-noreturn -Wpacked -Wparentheses -Wredundant-decls
     -Wreturn-type -Wsequence-point  -Wshadow -Wsign-compare
-    -Wswitch-default -Wuninitialized
+    -Wuninitialized
     -Wunknown-pragmas -Wunused -Wunused-function -Wunused-parameter
     -Wunused-value -Wunused-variable -Wwrite-strings
     -Wnull-dereference  -Wtautological-compare -Wmissing-declarations)
