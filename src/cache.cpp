@@ -24,104 +24,105 @@ Cache::Cache()
 	_isValid = true;
 }
 
-CandidateList::CandidateList(const Cache& cache, PackageFilter filterOption)
+CandidateList Cache::getCandidates(CandidateType type)
 {
-	switch(filterOption) {
-	case PackageFilter::InstalledPackages:
-		filterInstalledPkgs(cache);
+	CandidateList result;
+
+	switch(type) {
+	case CandidateType::Installed: {
+		for(pkgCache::GrpIterator group = _cacheFile->GetPkgCache()->GrpBegin();
+			group != _cacheFile->GetPkgCache()->GrpEnd();
+			++group) {
+			for(pkgCache::PkgIterator packet = group.PackageList(); !packet.end();
+				packet = group.NextPkg(packet)) {
+				bool ok;
+				Candidate newCandidate = createCandidate(packet, ok);
+				if(ok) result.push_back(newCandidate);
+			}
+		}
 		break;
-	case PackageFilter::NewAvailablePackages:
-		filterNewAvailablePkgs(cache);
+	}
+	case CandidateType::Upgradable: {
+		if(!_cacheFile->BuildSourceList()) {
+			utils::PrintPkgError();
+			break;
+		}
+
+		pkgSourceList* sourceListPkgs = _cacheFile->GetSourceList();
+		{
+			std::stringstream textStreamStatus;
+			TextAcquireStatus updateStatus(textStreamStatus);
+			ListUpdate(updateStatus, *sourceListPkgs);
+		}
+
+		_cacheFile->RemoveCaches();
+		if(!_cacheFile->BuildCaches(nullptr, false) &&
+		   !_cacheFile->Open(nullptr, false)) {
+			utils::PrintPkgError();
+			break;
+		}
+
+		pkgDepCache* packetCache = _cacheFile->GetDepCache();
+
+		for(pkgCache::PkgIterator packet = packetCache->PkgBegin(); !packet.end();
+			++packet) {
+			pkgDepCache::StateCache& state = (*packetCache)[packet];
+			if(state.Upgradable() && packet->CurrentVer) {
+				bool ok;
+				Candidate newCandidate = createCandidate(packet, ok);
+				if(ok) result.push_back(newCandidate);
+			}
+		}
 		break;
 	}
+	}
+
+	return result;
 }
 
-void CandidateList::filterInstalledPkgs(const Cache& cache)
+Candidate Cache::createCandidate(pkgCache::PkgIterator packetIter, bool& ok)
 {
-	clear();
+	Candidate newCandidate;
 
-	pkgPolicy* policy = cache._cacheFile->GetPolicy();
+	pkgCache::VerIterator candidate =
+		_cacheFile->GetPolicy()->GetCandidateVer(packetIter);
 
-	for(pkgCache::GrpIterator group = cache._cacheFile->GetPkgCache()->GrpBegin();
-		group != cache._cacheFile->GetPkgCache()->GrpEnd();
-		++group) {
-		for(pkgCache::PkgIterator packet = group.PackageList(); !packet.end();
-			packet = group.NextPkg(packet))
-			pushCandidate(policy, packet);
-	}
-}
-
-void CandidateList::filterNewAvailablePkgs(const Cache& cache)
-{
-	clear();
-
-	if(!cache._cacheFile->BuildSourceList()) {
-		utils::PrintPkgError();
-		return;
+	if(!candidate || !candidate.FileList()) {
+		ok = false;
+		return newCandidate;
 	}
 
-	pkgSourceList* sourceListPkgs = cache._cacheFile->GetSourceList();
-
-	{
-		std::stringstream textStreamStatus;
-		TextAcquireStatus updateStatus(textStreamStatus);
-		ListUpdate(updateStatus, *sourceListPkgs);
-	}
-
-	cache._cacheFile->RemoveCaches();
-	if(!cache._cacheFile->BuildCaches(nullptr, false) &&
-	   !cache._cacheFile->Open(nullptr, false)) {
-		utils::PrintPkgError();
-		return;
-	}
-
-	pkgDepCache* packetCache = cache._cacheFile->GetDepCache();
-	pkgPolicy* policy = cache._cacheFile->GetPolicy();
-
-	for(pkgCache::PkgIterator packet = packetCache->PkgBegin(); !packet.end(); ++packet) {
-		pkgDepCache::StateCache& state = (*packetCache)[packet];
-		if(state.Upgradable() && packet->CurrentVer) pushCandidate(policy, packet);
-	}
-}
-
-void CandidateList::pushCandidate(pkgPolicy* policy, pkgCache::PkgIterator packet)
-{
-	pkgCache::VerIterator candidate = policy->GetCandidateVer(packet);
-
-	if(!candidate || !candidate.FileList()) return;
+	newCandidate.Number = packetIter.Index();
+	newCandidate.FullName = packetIter.FullName();
 
 	pkgCache::VerFileIterator verFileIt = candidate.FileList();
-
 	std::string archive, origin, component, architecture;
 
-	if(verFileIt.File().Archive()) archive = verFileIt.File().Archive();
-	if(verFileIt.File().Origin()) origin = verFileIt.File().Origin();
-	if(verFileIt.File().Component()) component = verFileIt.File().Component();
-	if(verFileIt.File().Architecture()) architecture = verFileIt.File().Architecture();
+	if(verFileIt.File().Archive()) newCandidate.Archive = verFileIt.File().Archive();
+	if(verFileIt.File().Origin()) newCandidate.Origin = verFileIt.File().Origin();
+	if(verFileIt.File().Component())
+		newCandidate.Component = verFileIt.File().Component();
+	if(verFileIt.File().Architecture())
+		newCandidate.Architecture = verFileIt.File().Architecture();
 
-	push_back(Candidate{packet.Index(),
-						packet.FullName(),
-						candidate.VerStr(),
-						architecture,
-						archive,
-						origin,
-						component});
+	ok = true;
+	return newCandidate;
 }
 
 std::ostream& operator<<(std::ostream& stream, const CandidateList& candidateList)
 {
-	stream << std::string(26, '*') << std::endl;
+	stream << "[\n";
 
 	for(const Candidate& candidate : candidateList)
-		stream << "\n\t"
-			   << "FullName: " << candidate.FullName << "\n\t"
-			   << "Version: " << candidate.Version << "\n\t"
-			   << "Architecture: " << candidate.Architecture << "\n\t"
-			   << "Archive: " << candidate.Archive << "\n\t"
-			   << "Origin: " << candidate.Origin << "\n\t"
-			   << "Component: " << candidate.Component << "\n";
+		stream << " {\n  "
+			   << "FullName: " << candidate.FullName << "\n  "
+			   << "Version: " << candidate.Version << "\n  "
+			   << "Architecture: " << candidate.Architecture << "\n  "
+			   << "Archive: " << candidate.Archive << "\n  "
+			   << "Origin: " << candidate.Origin << "\n  "
+			   << "Component: " << candidate.Component << "\n }\n";
 
-	stream << std::string(26, '*') << std::endl;
+	stream << "]" << std::endl;
 	return stream;
 }
 
