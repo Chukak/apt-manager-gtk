@@ -8,11 +8,48 @@
 #include <apt-pkg/sourcelist.h>
 #include <apt-pkg/update.h>
 #include <apt-pkg/cachefile.h>
+#include <apt-pkg/depcache.h>
+#include <algorithm>
 
 #include <sstream>
 
 namespace package
 {
+bool Candidate::operator==(const Candidate& rhs)
+{
+	return Number == rhs.Number && FullName == rhs.FullName && Version == rhs.Version &&
+		   Architecture == rhs.Architecture && Archive == rhs.Archive &&
+		   Origin == rhs.Origin && Component == rhs.Component;
+}
+
+bool Candidate::isEquals(pkgPolicy* policy, pkgCache::PkgIterator iter) const
+{
+	if(!iter || !policy || iter.end()) return false;
+
+	if(iter.FullName() != FullName || iter.Index() != Number) return false;
+
+	pkgCache::VerIterator verIter = policy->GetCandidateVer(iter);
+	if(!verIter || !verIter.FileList()) return false;
+
+	if(!verIter.FileList().File().Archive() ||
+	   (verIter.FileList().File().Archive() != Archive))
+		return false;
+
+	if(!verIter.FileList().File().Origin() ||
+	   (verIter.FileList().File().Origin() != Origin))
+		return false;
+
+	if(!verIter.FileList().File().Component() ||
+	   (verIter.FileList().File().Component() != Component))
+		return false;
+
+	if(!verIter.FileList().File().Architecture() ||
+	   (verIter.FileList().File().Architecture() != Architecture))
+		return false;
+
+	return true;
+}
+
 Cache::Cache()
 {
 	utils::InitPkgConfiguration();
@@ -78,6 +115,41 @@ CandidateList Cache::getCandidates(CandidateType type)
 	}
 
 	return result;
+}
+
+bool Cache::installCandidates(const CandidateList& list)
+{
+	(void)list;
+	if(!_cacheFile->Open(nullptr, false)) return false;
+
+	pkgDepCache* depCache = _cacheFile->GetDepCache();
+
+	if(depCache->DelCount() != 0 || depCache->InstCount() != 0) {
+		utils::PrintPkgError();
+		return false;
+	}
+
+	pkgPolicy* policy = _cacheFile->GetPolicy();
+
+	for(pkgCache::PkgIterator pkg = depCache->PkgBegin(); !pkg.end(); ++pkg) {
+		CandidateList::const_iterator found =
+			std::find_if(list.cbegin(),
+						 list.cend(),
+						 [&pkg, policy](const Candidate& candidate) {
+							 return candidate.isEquals(policy, pkg);
+						 });
+
+		if(found != list.cend()) {
+			depCache->MarkInstall(pkg, true, 0, false, true);
+		}
+	}
+
+	{
+		// unused section
+		// There is packages installation
+		(void)0;
+	}
+	return true;
 }
 
 Candidate Cache::createCandidate(pkgCache::PkgIterator packetIter, bool& ok)

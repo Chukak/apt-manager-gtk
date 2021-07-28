@@ -21,6 +21,15 @@ struct Candidate
 		Archive,          //! Archive name
 		Origin,           //! Origin
 		Component;        //!
+
+	bool operator==(const Candidate& rhs);
+	/**
+	 * @brief isEquals
+	 * @param policy A policy object
+	 * @param iter Iterator to the candidate
+	 * @return Equality of two candidates.
+	 */
+	bool isEquals(pkgPolicy* policy, pkgCache::PkgIterator iter) const;
 };
 
 /**
@@ -65,6 +74,13 @@ class Cache
      * @return A list of candidates.
      */
     CandidateList getCandidates(CandidateType type);
+    /**
+     * @brief installCandidates
+     * Installs candidates from the passed list.
+     * @param list List of candidates
+     * @return Result of installation.
+     */
+    bool installCandidates(const CandidateList& list);
 
   private:
     /**
