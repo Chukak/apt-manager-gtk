@@ -9,6 +9,13 @@
 #include <apt-pkg/update.h>
 #include <apt-pkg/cachefile.h>
 #include <apt-pkg/depcache.h>
+#include <apt-pkg/packagemanager.h>
+#include <apt-pkg/install-progress.h>
+#include <apt-pkg/pkgrecords.h>
+#include <apt-pkg/acquire-item.h>
+#include <apt-pkg/fileutl.h>
+#include <apt-pkg/strutl.h>
+#include <apt-pkg/pkgsystem.h>
 #include <algorithm>
 
 #include <sstream>
@@ -119,8 +126,15 @@ CandidateList Cache::getCandidates(CandidateType type)
 
 bool Cache::installCandidates(const CandidateList& list)
 {
-	(void)list;
-	if(!_cacheFile->Open(nullptr, false)) return false;
+	if(!RunScripts("APT::Install::Pre-Invoke")) {
+		utils::PrintPkgError();
+		return false;
+	}
+
+	if(!_cacheFile->Open(nullptr, false)) {
+		utils::PrintPkgError();
+		return false;
+	}
 
 	pkgDepCache* depCache = _cacheFile->GetDepCache();
 
@@ -143,12 +157,87 @@ bool Cache::installCandidates(const CandidateList& list)
 			depCache->MarkInstall(pkg, true, 0, false, true);
 		}
 	}
-
-	{
-		// unused section
-		// There is packages installation
-		(void)0;
+	if(!_cacheFile->BuildSourceList()) {
+		utils::PrintPkgError();
+		return false;
 	}
+
+	std::unique_ptr<pkgPackageManager> manager(_system->CreatePM(depCache));
+	pkgSourceList* const sourceList = _cacheFile->GetSourceList();
+	pkgRecords records(*depCache);
+	pkgAcquire managerAcq;
+
+	if(!manager->GetArchives(&managerAcq, sourceList, &records)) {
+		utils::PrintPkgError();
+		return false;
+	}
+
+	bool acquireRunSuccess(true);
+	{
+		switch(managerAcq.Run()) {
+		case pkgAcquire::Failed: {
+			utils::PrintPkgError();
+			return false;
+		default:
+			break;
+		}
+		}
+
+		for(pkgAcquire::ItemIterator iter = managerAcq.ItemsBegin();
+			iter != managerAcq.ItemsEnd();
+			++iter) {
+			if((*iter)->Status == pkgAcquire::Item::StatDone &&
+			   (*iter)->Complete == true) {
+				continue;
+			}
+
+			::URI uri((*iter)->DescURI());
+			uri.User.clear();
+			uri.Password.clear();
+
+			_error->Error("Failed to fetch: %s %s",
+						  std::string(uri).c_str(),
+						  (*iter)->ErrorText.c_str());
+		}
+	}
+
+	if(!acquireRunSuccess) {
+		utils::PrintPkgError();
+		return false;
+	}
+
+	if(!manager->FixMissing()) {
+		_error->Error("Unable to correct missing packages.");
+		utils::PrintPkgError();
+		return false;
+	}
+
+	APT::Progress::PackageManager* managerProgress =
+		APT::Progress::PackageManagerProgressFactory();
+
+	switch(manager->DoInstall(managerProgress)) {
+	case pkgPackageManager::Completed: {
+		break;
+	case pkgPackageManager::Incomplete:
+	case pkgPackageManager::Failed:
+		utils::PrintPkgError();
+		break;
+	}
+	}
+
+	managerAcq.Shutdown();
+	if(!manager->GetArchives(&managerAcq, sourceList, &records)) {
+		utils::PrintPkgError();
+		return false;
+	}
+
+	delete managerProgress;
+
+	if(!RunScripts("APT::Install::Post-Invoke-Success")) {
+		utils::PrintPkgError();
+		return false;
+	}
+
 	return true;
 }
 
