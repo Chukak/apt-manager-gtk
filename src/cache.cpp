@@ -270,18 +270,27 @@ Candidate Cache::createCandidate(pkgCache::PkgIterator packetIter, bool& ok)
 	return newCandidate;
 }
 
+std::ostream& operator<<(std::ostream& stream, const Candidate& candidate)
+{
+	stream << "{\n  "
+		   << "FullName: " << candidate.FullName << "\n  "
+		   << "Version: " << candidate.Version << "\n  "
+		   << "Architecture: " << candidate.Architecture << "\n  "
+		   << "Archive: " << candidate.Archive << "\n  "
+		   << "Origin: " << candidate.Origin << "\n  "
+		   << "Component: " << candidate.Component << "\n }";
+	return stream;
+}
+
 std::ostream& operator<<(std::ostream& stream, const CandidateList& candidateList)
 {
 	stream << "[\n";
 
-	for(const Candidate& candidate : candidateList)
-		stream << " {\n  "
-			   << "FullName: " << candidate.FullName << "\n  "
-			   << "Version: " << candidate.Version << "\n  "
-			   << "Architecture: " << candidate.Architecture << "\n  "
-			   << "Archive: " << candidate.Archive << "\n  "
-			   << "Origin: " << candidate.Origin << "\n  "
-			   << "Component: " << candidate.Component << "\n }\n";
+	for(const Candidate& candidate : candidateList) {
+		stream << " ";
+		stream << candidate;
+		stream << "\n";
+	}
 
 	stream << "]" << std::endl;
 	return stream;

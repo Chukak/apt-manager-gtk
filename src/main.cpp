@@ -6,8 +6,8 @@ int main(int argc, char** argv)
 	(void)argv;
 
 	package::Cache cache;
-
-	std::cout << cache.getCandidates(package::Upgradable) << std::endl;
+	package::CandidateList candidates = cache.getCandidates(package::Upgradable);
+	std::cout << candidates << std::endl;
 
 	return 0;
 }

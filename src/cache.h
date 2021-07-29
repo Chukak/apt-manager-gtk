@@ -14,6 +14,8 @@ namespace package
  */
 struct Candidate
 {
+	friend std::ostream& operator<<(std::ostream& stream, const Candidate& candidate);
+
 	size_t Number;        //! The number of candidate
 	std::string FullName, //! Candidate Full name
 		Version,          //! Candidate Version
