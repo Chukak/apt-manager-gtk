@@ -58,6 +58,11 @@ void SetErrorLog(std::ostream* out);
  * @return The current time as a string.
  */
 std::string GetNowStr(std::string format = "", bool addMs = false);
+/**
+ * @brief GetPkgSystem
+ * @return The package system (pkgSystem) object.
+ */
+pkgSystem& GetPkgSystem();
 
 namespace debug
 {

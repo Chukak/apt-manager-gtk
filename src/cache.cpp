@@ -184,7 +184,7 @@ bool Cache::installCandidates(const CandidateList& list)
 		return false;
 	}
 
-	std::unique_ptr<pkgPackageManager> manager(_system->CreatePM(depCache));
+	std::unique_ptr<pkgPackageManager> manager(utils::GetPkgSystem().CreatePM(depCache));
 	pkgSourceList* const sourceList = _cacheFile->GetSourceList();
 	pkgRecords records(*depCache);
 	pkgAcquire managerAcq;

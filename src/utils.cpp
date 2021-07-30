@@ -85,6 +85,11 @@ std::string GetNowStr(std::string format, bool addMs)
 	return result.str();
 }
 
+pkgSystem& GetPkgSystem()
+{
+	return *_system;
+}
+
 namespace debug
 {
 #if __cplusplus > 201703L
