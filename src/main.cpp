@@ -1,4 +1,5 @@
 #include "cache.h"
+#include "utils.h"
 
 int main(int argc, char** argv)
 {
@@ -7,7 +8,7 @@ int main(int argc, char** argv)
 
 	package::Cache cache;
 	package::CandidateList candidates = cache.getCandidates(package::Upgradable);
-	std::cout << candidates << std::endl;
+	utils::GetLog() << candidates << std::endl;
 
 	return 0;
 }

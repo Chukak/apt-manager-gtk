@@ -63,7 +63,11 @@ Cache::Cache()
 
 	_cacheFile.reset(new pkgCacheFile);
 
-	if(!_cacheFile->GetPkgCache() || _error->PendingError()) utils::PrintPkgError();
+	if(!_cacheFile->GetPkgCache()) {
+		DEBUG() << "_cacheFile->GetPkgCache() == false";
+		utils::PrintPkgError();
+		return;
+	}
 
 	_isValid = true;
 }
@@ -84,10 +88,13 @@ CandidateList Cache::getCandidates(CandidateType type)
 				if(ok) result.push_back(newCandidate);
 			}
 		}
+		DEBUG() << "Successfully generated all the installed packages (count: "
+				<< result.size() << ").";
 		break;
 	}
 	case CandidateType::Upgradable: {
 		if(!_cacheFile->BuildSourceList()) {
+			DEBUG() << "_cacheFile->BuildSourceList() == false";
 			utils::PrintPkgError();
 			break;
 		}
@@ -102,6 +109,8 @@ CandidateList Cache::getCandidates(CandidateType type)
 		_cacheFile->RemoveCaches();
 		if(!_cacheFile->BuildCaches(nullptr, false) &&
 		   !_cacheFile->Open(nullptr, false)) {
+			DEBUG() << "_cacheFile->BuildCaches(...) == false; _cacheFile->Open(...) == "
+					   "false";
 			utils::PrintPkgError();
 			break;
 		}
@@ -117,6 +126,8 @@ CandidateList Cache::getCandidates(CandidateType type)
 				if(ok) result.push_back(newCandidate);
 			}
 		}
+		DEBUG() << "Successfully generated all the upgradable packages (count: "
+				<< result.size() << ").";
 		break;
 	}
 	}
@@ -127,11 +138,13 @@ CandidateList Cache::getCandidates(CandidateType type)
 bool Cache::installCandidates(const CandidateList& list)
 {
 	if(!RunScripts("APT::Install::Pre-Invoke")) {
+		DEBUG() << "RunScripts(\"APT::Install::Pre-Invoke\") == false";
 		utils::PrintPkgError();
 		return false;
 	}
 
 	if(!_cacheFile->Open(nullptr, false)) {
+		DEBUG() << "_cacheFile->Open(...) == false";
 		utils::PrintPkgError();
 		return false;
 	}
@@ -139,12 +152,14 @@ bool Cache::installCandidates(const CandidateList& list)
 	pkgDepCache* depCache = _cacheFile->GetDepCache();
 
 	if(depCache->DelCount() != 0 || depCache->InstCount() != 0) {
+		DEBUG() << "depCache->DelCount() == 0; depCache->InstCount() == 0";
 		utils::PrintPkgError();
 		return false;
 	}
 
 	pkgPolicy* policy = _cacheFile->GetPolicy();
 
+	size_t markInstalled = 0;
 	for(pkgCache::PkgIterator pkg = depCache->PkgBegin(); !pkg.end(); ++pkg) {
 		CandidateList::const_iterator found =
 			std::find_if(list.cbegin(),
@@ -154,10 +169,17 @@ bool Cache::installCandidates(const CandidateList& list)
 						 });
 
 		if(found != list.cend()) {
-			depCache->MarkInstall(pkg, true, 0, false, true);
+			if(!depCache->MarkInstall(pkg, true, 0, false, true)) {
+				DEBUG() << "depCache->MarkInstall(...) == false";
+				utils::PrintPkgError();
+			} else
+				++markInstalled;
 		}
 	}
+	DEBUG() << markInstalled << " packages are marked as installed.";
+
 	if(!_cacheFile->BuildSourceList()) {
+		DEBUG() << "_cacheFile->BuildSourceList() == false";
 		utils::PrintPkgError();
 		return false;
 	}
@@ -168,6 +190,7 @@ bool Cache::installCandidates(const CandidateList& list)
 	pkgAcquire managerAcq;
 
 	if(!manager->GetArchives(&managerAcq, sourceList, &records)) {
+		DEBUG() << "manager->GetArchives(...) == false";
 		utils::PrintPkgError();
 		return false;
 	}
@@ -227,6 +250,7 @@ bool Cache::installCandidates(const CandidateList& list)
 
 	managerAcq.Shutdown();
 	if(!manager->GetArchives(&managerAcq, sourceList, &records)) {
+		DEBUG() << "manager->GetArchives(...) == false";
 		utils::PrintPkgError();
 		return false;
 	}
@@ -234,6 +258,7 @@ bool Cache::installCandidates(const CandidateList& list)
 	delete managerProgress;
 
 	if(!RunScripts("APT::Install::Post-Invoke-Success")) {
+		DEBUG() << "RunScripts(\"APT::Install::Post-Invoke-Success\") == false";
 		utils::PrintPkgError();
 		return false;
 	}
