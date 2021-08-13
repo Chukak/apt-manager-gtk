@@ -7,20 +7,20 @@ project(package-manager LANGUAGES CXX)
 
 set(SOURCE_FILES
     src/main.cpp
-    src/cache.cpp
+    src/package/cache.cpp
     src/utils.cpp
-    src/textacquirestatus.cpp)
+    src/package/textacquirestatus.cpp)
 
 set(PRIVATE_HEADER_FILES
-    src/cache.h
+    src/package/cache.h
     src/utils.h
-    src/textacquirestatus.h)
+    src/package/textacquirestatus.h)
 
-set(CXX_PROJECT_COMPILE_FLAGS -g -O -fstack-protector
+set(CXX_PROJECT_COMPILE_FLAGS -O -fstack-protector
     -Wall -pedantic -Wextra -Wcast-align -Wcomment -Wconversion
     -Wdisabled-optimization -Werror -Wfloat-equal
     -Wmissing-braces -Wmissing-field-initializers
-    -Wmissing-noreturn -Wpacked -Wparentheses -Wredundant-decls
+    -Wmissing-noreturn -Wpacked -Wparentheses #-Wredundant-decls
     -Wreturn-type -Wsequence-point  -Wshadow -Wsign-compare
     -Wuninitialized
     -Wunknown-pragmas -Wunused -Wunused-function -Wunused-parameter
@@ -41,24 +41,60 @@ set(CXX_PROJECT_INCLUDE_DIRECTORIES
 
 # GTK3 (c++)
 find_package(PkgConfig REQUIRED)
-PKG_CHECK_MODULES(GTK3 REQUIRED gtkmm-3.0)
+PKG_CHECK_MODULES(GTKMM REQUIRED gtkmm-3.0)
 
 list(APPEND CXX_PROJECT_LINK_FLAGS ${GTKMM_LIBRARIES})
 list(APPEND CXX_PROJECT_LINK_DIRECTORIES ${GTKMM_LIBRARY_DIRS})
 list(APPEND CXX_PROJECT_INCLUDE_DIRECTORIES ${GTKMM_INCLUDE_DIRS})
-list(APPEND CXX_PROJECT_COMPILE_DEFINITIONS ${GTKMM_CFLAGS_OTHER})
 
 # libapt-pkg
 find_library(APT_PKG_LIBRARIES NAMES apt-pkg REQUIRED)
 
 list(APPEND CXX_PROJECT_LINK_FLAGS ${APT_PKG_LIBRARIES})
 
-add_executable(${PROJECT_NAME} ${SOURCE_FILES} ${PRIVATE_HEADER_FILES})
+set(CXX_COMPILED_RESOURCES ${PROJECT_NAME}-gtk-resources)
+set(CXX_COMPILED_RESOURCE_SRC_FILE ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.gresource)
+find_program(GLIB_COMPILE_RESOURCES_CMD NAMES glib-compile-resources REQUIRED)
+if(GLIB_COMPILE_RESOURCES_CMD)
+    set(CXX_RESOURCE_MAIN_FILE
+        resources.xml)
+    set(CXX_RESOURCE_MAIN_FILE_PATH
+        src/resources)
+    set(CXX_RESOURCE_SRC_FILES
+        src/resources/ui/main.ui)
+
+    add_custom_command(
+        OUTPUT ${CXX_COMPILED_RESOURCE_SRC_FILE}
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/${CXX_RESOURCE_MAIN_FILE_PATH}
+        COMMAND ${GLIB_COMPILE_RESOURCES_CMD}
+        ARGS
+            --target=${CXX_COMPILED_RESOURCE_SRC_FILE}
+            ${CXX_RESOURCE_MAIN_FILE}
+        VERBATIM
+        MAIN_DEPENDENCY ${CXX_RESOURCE_MAIN_FILE_PATH}/${CXX_RESOURCE_MAIN_FILE}
+        DEPENDS ${CXX_RESOURCE_SRC_FILES})
+
+    add_custom_target(${CXX_COMPILED_RESOURCES}
+        DEPENDS ${CXX_COMPILED_RESOURCE_SRC_FILE} SOURCES ${CXX_RESOURCE_SRC_FILES})
+
+    list(APPEND CXX_PROJECT_COMPILE_DEFINITIONS
+        -DUI_RESOURCE_FILE=\"${CXX_COMPILED_RESOURCE_SRC_FILE}\"
+        )
+else()
+    message(FATAL "No compiled resources.")
+endif()
+
+add_executable(${PROJECT_NAME} ${SOURCE_FILES} ${PRIVATE_HEADER_FILES}
+    ${CXX_COMPILED_RESOURCE_SRC_FILE})
+set_source_files_properties(
+    ${CXX_COMPILED_RESOURCE_SRC_FILE}
+    PROPERTIES GENERATED TRUE)
+add_dependencies(${PROJECT_NAME} ${CXX_COMPILED_RESOURCES})
 target_compile_options(${PROJECT_NAME} PUBLIC ${CXX_PROJECT_COMPILE_FLAGS})
 target_link_libraries(${PROJECT_NAME} PUBLIC ${CXX_PROJECT_LINK_FLAGS})
 target_link_directories(${PROJECT_NAME} PUBLIC ${CXX_PROJECT_LINK_DIRECTORIES})
 target_compile_definitions(${PROJECT_NAME} PUBLIC ${CXX_PROJECT_COMPILE_DEFINITIONS})
-target_include_directories(${PROJECT_NAME} PRIVATE src PUBLIC ${CXX_PROJECT_INCLUDE_DIRECTORIES})
+target_include_directories(${PROJECT_NAME} PRIVATE src ${CXX_PROJECT_INCLUDE_DIRECTORIES})
 
 install(TARGETS ${PROJECT_NAME} RUNTIME DESTINATION bin COMPONENT binary)
 
