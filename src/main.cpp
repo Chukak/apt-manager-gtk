@@ -1,6 +1,9 @@
 #include "package/cache.h"
 #include "utils.h"
 
+#include "widget/sections.h"
+#include "widget/mainwindow.h"
+
 #include <gtkmm/application.h>
 #include <gtkmm/builder.h>
 #include <gtkmm/applicationwindow.h>
@@ -8,25 +11,24 @@
 
 int main(int argc, char** argv)
 {
-	(void)argc;
-	(void)argv;
-
 	// load resources
-	Glib::RefPtr<Gio::Resource> resource_bundle =
-		Gio::Resource::create_from_file(UI_RESOURCE_FILE);
-	resource_bundle->register_global();
+	WRAP_EXCPT(std::exception, {
+		Glib::RefPtr<Gio::Resource> resource_bundle =
+			Gio::Resource::create_from_file(UI_RESOURCE_FILE);
+		resource_bundle->register_global();
+	})
 
 	Glib::RefPtr<Gtk::Application> app(Gtk::Application::create(argc, argv));
-	Gtk::ApplicationWindow* appWin;
 
-	Glib::RefPtr<Gtk::Builder> ui(Gtk::Builder::create_from_resource("/ui/main.ui"));
-	ui->get_widget<Gtk::ApplicationWindow>("Main", appWin);
+	widget::MainWindow* appWin =
+		utils::GetWidget<widget::MainWindow>("MainWindow", widget::Derived);
+	widget::Sections* sectionsView =
+		utils::GetWidget<widget::Sections>("SectionsTree", widget::Derived);
 
-	/*
-	package::Cache cache;
-	package::CandidateList candidates = cache.getCandidates(package::Upgradable);
-	utils::GetLog() << candidates << std::endl;
-	*/
+	int rc = app->run(*appWin);
 
-	return app->run(*appWin);
+	delete appWin;
+	delete sectionsView;
+
+	return rc;
 }

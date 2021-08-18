@@ -1,9 +1,13 @@
 #ifndef UTILS_H
 #define UTILS_H
 
+#include "type.h"
+
 #include <apt-pkg/configuration.h>
 #include <apt-pkg/pkgsystem.h>
 #include <sstream>
+
+#include <gtkmm/builder.h>
 
 #if __cplusplus > 201703L
 #include <source_location>
@@ -118,6 +122,65 @@ class Debug
 #endif
 #endif
 } // namespace debug
+
+#define WRAP_EXCPT_MSG(EXCTYPE, CODE, MSG)                                               \
+	try {                                                                                \
+		CODE                                                                             \
+	} catch(const EXCTYPE& e) {                                                          \
+		utils::GetLog() << "Handled exception (" << #EXCTYPE << "): " << e.what() << "." \
+						<< MSG << std::endl;                                             \
+	}
+
+#define WRAP_EXCPT(EXCTYPE, CODE) WRAP_EXCPT_MSG(EXCTYPE, CODE, "")
+} // namespace utils
+
+namespace widget
+{
+/**
+ * @brief The WidgetType enum
+ */
+enum WidgetType
+{
+	Default,
+	Derived
+};
+} // namespace widget
+
+namespace utils
+{
+/**
+ * @brief GetBuilderUI
+ * @return The GTK.builder object.
+ */
+ObjPtr<Gtk::Builder> GetBuilderUI();
+
+/**
+ * @brief GetWidget
+ * Initialize a widget from the builder by type.
+ * @tparam Widget class
+ * @param widgetID Widget ID
+ * @param type Widget type
+ * @return The widget object.
+ */
+template<typename TYPE>
+TYPE* GetWidget(const std::string& widgetID, widget::WidgetType type = widget::Default)
+{
+	TYPE* t;
+	WRAP_EXCPT_MSG(
+		std::exception,
+		{
+			switch(type) {
+			case widget::Default:
+				GetBuilderUI()->get_widget(widgetID, t);
+				break;
+			case widget::Derived:
+				GetBuilderUI()->get_widget_derived(widgetID, t);
+				break;
+			}
+		},
+		std::string("\nCheck the '") + UI_FILENAME + std::string("' file."));
+	return t;
+}
 } // namespace utils
 
 #endif // UTILS_H

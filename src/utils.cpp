@@ -111,4 +111,15 @@ Debug::~Debug()
 	*LogOutput << _buf.str() << std::endl;
 }
 } // namespace debug
+
+static ObjPtr<Gtk::Builder> BuilderUI;
+
+ObjPtr<Gtk::Builder> GetBuilderUI()
+{
+	if(!(BuilderUI.get()))
+		WRAP_EXCPT(std::exception,
+				   { BuilderUI = Gtk::Builder::create_from_resource(UI_FILENAME); });
+
+	return BuilderUI;
+}
 } // namespace utils

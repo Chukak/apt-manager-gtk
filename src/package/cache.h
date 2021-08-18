@@ -47,10 +47,12 @@ class CandidateList : public std::list<Candidate>
 /**
  * @brief The CandidateType enum
  */
-enum CandidateType
+enum CandidateType : int32_t
 {
-	Installed,
-	Upgradable
+	Installed = 1,
+	Upgradable = 2,
+	FirstType = Installed,
+	LastType = Upgradable
 };
 
 /**

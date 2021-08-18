@@ -9,12 +9,17 @@ set(SOURCE_FILES
     src/main.cpp
     src/package/cache.cpp
     src/utils.cpp
-    src/package/textacquirestatus.cpp)
+    src/package/textacquirestatus.cpp
+    src/widget/sections.cpp
+    src/widget/mainwindow.cpp)
 
 set(PRIVATE_HEADER_FILES
     src/package/cache.h
     src/utils.h
-    src/package/textacquirestatus.h)
+    src/package/textacquirestatus.h
+    src/widget/sections.h
+    src/type.h
+    src/widget/mainwindow.h)
 
 set(CXX_PROJECT_COMPILE_FLAGS -O -fstack-protector
     -Wall -pedantic -Wextra -Wcast-align -Wcomment -Wconversion
@@ -79,6 +84,7 @@ if(GLIB_COMPILE_RESOURCES_CMD)
 
     list(APPEND CXX_PROJECT_COMPILE_DEFINITIONS
         -DUI_RESOURCE_FILE=\"${CXX_COMPILED_RESOURCE_SRC_FILE}\"
+        -DUI_FILENAME=\"/ui/main.ui\"
         )
 else()
     message(FATAL "No compiled resources.")
