@@ -12,6 +12,9 @@ class MainWindow : public Gtk::Window
 {
   public:
     MainWindow(BaseObjectType* cobject, const ObjPtr<Gtk::Builder>& refBuilder);
+    virtual ~MainWindow() = default;
+
+    void initUI();
 };
 } // namespace widget
 

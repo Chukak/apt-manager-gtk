@@ -165,7 +165,7 @@ ObjPtr<Gtk::Builder> GetBuilderUI();
 template<typename TYPE>
 TYPE* GetWidget(const std::string& widgetID, widget::WidgetType type = widget::Default)
 {
-	TYPE* t;
+	TYPE* t = nullptr;
 	WRAP_EXCPT_MSG(
 		std::exception,
 		{

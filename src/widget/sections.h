@@ -13,6 +13,7 @@ class Sections : public Gtk::TreeView
 {
   public:
     Sections(BaseObjectType* cobject, const ObjPtr<Gtk::Builder>& refBuilder);
+    virtual ~Sections() = default;
 
   protected:
     void on_row_activated(const Gtk::TreeModel::Path& path,

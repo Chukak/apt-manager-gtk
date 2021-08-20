@@ -11,7 +11,8 @@ set(SOURCE_FILES
     src/utils.cpp
     src/package/textacquirestatus.cpp
     src/widget/sections.cpp
-    src/widget/mainwindow.cpp)
+    src/widget/mainwindow.cpp
+    src/widget/button.cpp)
 
 set(PRIVATE_HEADER_FILES
     src/package/cache.h
@@ -19,7 +20,8 @@ set(PRIVATE_HEADER_FILES
     src/package/textacquirestatus.h
     src/widget/sections.h
     src/type.h
-    src/widget/mainwindow.h)
+    src/widget/mainwindow.h
+    src/widget/button.h)
 
 set(CXX_PROJECT_COMPILE_FLAGS -O -fstack-protector
     -Wall -pedantic -Wextra -Wcast-align -Wcomment -Wconversion
@@ -43,6 +45,21 @@ set(CXX_PROJECT_COMPILE_DEFINITIONS
 
 set(CXX_PROJECT_INCLUDE_DIRECTORIES
     )
+
+# libasan
+# WARNING: Pass this before running application with libasan:
+# ASAN_OPTIONS=new_delete_type_mismatch=0
+#
+# See more: https://gitlab.gnome.org/GNOME/gtkmm/-/issues/65
+if (CMAKE_BUILD_TYPE MATCHES "Debug")
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+        list(APPEND CXX_PROJECT_COMPILE_FLAGS -g)
+        if(UNIX)
+            list(APPEND CXX_PROJECT_COMPILE_FLAGS -fno-omit-frame-pointer -fsanitize=address)
+            list(APPEND CXX_PROJECT_LINK_FLAGS -lasan)
+        endif()
+    endif()
+endif()
 
 # GTK3 (c++)
 find_package(PkgConfig REQUIRED)

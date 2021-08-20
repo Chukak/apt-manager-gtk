@@ -19,11 +19,11 @@ Sections::Sections(BaseObjectType* cobject, const ObjPtr<Gtk::Builder>& refBuild
 
 		switch(t) {
 		case package::Installed: {
-			row[_rowData.Title] = "installed";
+			row[_rowData.Title] = "INSTALLED";
 			break;
 		}
 		case package::Upgradable: {
-			row[_rowData.Title] = "Upgradable";
+			row[_rowData.Title] = "UPGRADABLE";
 			break;
 		}
 		}
