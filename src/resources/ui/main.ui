@@ -24,7 +24,7 @@
             <property name="spacing">3</property>
             <child>
               <object class="GtkScrolledWindow" id="SectionsScrollWindow">
-                <property name="width_request">324</property>
+                <property name="width_request">280</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="hexpand">False</property>
@@ -82,7 +82,7 @@
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
-                <property name="margin_left">86</property>
+                <property name="margin_left">48</property>
               </object>
               <packing>
                 <property name="expand">True</property>
@@ -99,7 +99,7 @@
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
-                <property name="margin_left">22</property>
+                <property name="margin_left">16</property>
               </object>
               <packing>
                 <property name="expand">True</property>

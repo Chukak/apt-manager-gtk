@@ -6,6 +6,7 @@
 #include <gtkmm/treeview.h>
 #include <gtkmm/builder.h>
 #include <gtkmm/liststore.h>
+#include <pango/pango-font.h>
 
 namespace widget
 {
@@ -27,6 +28,9 @@ class Sections : public Gtk::TreeView
 
 	  public:
 		Gtk::TreeModelColumn<Glib::ustring> Title;
+		Gtk::TreeModelColumn<Gdk::RGBA> BackgroundColor;
+		Gtk::TreeModelColumn<Gdk::RGBA> ForegroundColor;
+		Gtk::TreeModelColumn<Pango::FontDescription> Font;
 	};
 
   private:
