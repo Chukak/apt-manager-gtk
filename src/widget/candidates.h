@@ -23,6 +23,8 @@ class Candidates : public Gtk::TreeView
     void setRowStyle(Gtk::TreeModel::Row row);
     void setColumnRender(Gtk::TreeViewColumn* column, Gtk::CellRenderer* render);
     void refreshActual();
+    void onToggleColumn(const Glib::ustring& path);
+    void selectAll();
 
   private:
     class RowType : public Gtk::TreeModel::ColumnRecord

@@ -18,6 +18,9 @@ Candidates::Candidates(BaseObjectType* cobject, const ObjPtr<Gtk::Builder>& refB
 	{
 		Gtk::CellRendererToggle* render = Gtk::manage(new Gtk::CellRendererToggle);
 		render->set_fixed_size(80, 48);
+		render->set_activatable(true);
+		render->signal_toggled().connect(
+			sigc::mem_fun(*this, &Candidates::onToggleColumn));
 
 		Gtk::TreeViewColumn* col =
 			Gtk::manage(new Gtk::TreeViewColumn("CHECKED", *render));
@@ -36,6 +39,7 @@ Candidates::Candidates(BaseObjectType* cobject, const ObjPtr<Gtk::Builder>& refB
 		Gtk::TreeViewColumn* col = Gtk::manage(new Gtk::TreeViewColumn("NAME", *render));
 		setColumnRender(col, render);
 		col->add_attribute(render->property_text(), _rowData.Name);
+		col->set_resizable(true);
 
 		append_column(*col);
 	}
@@ -102,6 +106,11 @@ Candidates::Candidates(BaseObjectType* cobject, const ObjPtr<Gtk::Builder>& refB
 	widget::Button* btnUpdate =
 		utils::GetWidget<widget::Button>("ButtonUpdateAction", widget::Derived);
 	btnUpdate->signal_clicked().connect(sigc::mem_fun(*this, &Candidates::refreshActual));
+
+	widget::ToggleButton* btnSelectAll =
+		utils::GetWidget<widget::ToggleButton>("ToggleButtonSelectAllAction",
+											   widget::Derived);
+	btnSelectAll->signal_clicked().connect(sigc::mem_fun(*this, &Candidates::selectAll));
 }
 
 void Candidates::generate(package::CandidateType type, bool force)
@@ -125,6 +134,10 @@ void Candidates::generate(package::CandidateType type, bool force)
 
 	_rows->clear();
 
+	widget::ToggleButton* btnSelectAll =
+		utils::GetWidget<widget::ToggleButton>("ToggleButtonSelectAllAction",
+											   widget::Derived);
+
 	switch(type) {
 	case package::Upgradable: {
 		get_column(0)->set_visible(true);
@@ -132,6 +145,8 @@ void Candidates::generate(package::CandidateType type, bool force)
 		_sortModel = ObjPtr<RowSort>(new RowSort(_rows));
 		_sortModel->set_sort_column(_rowData.Name, Gtk::SORT_ASCENDING);
 		set_model(_sortModel);
+
+		btnSelectAll->set_visible(true);
 
 		break;
 	}
@@ -141,6 +156,9 @@ void Candidates::generate(package::CandidateType type, bool force)
 		_sortModel.reset();
 		set_model(_rows);
 
+		btnSelectAll->set_active(false);
+		btnSelectAll->set_visible(false);
+
 		break;
 	}
 	}
@@ -148,7 +166,7 @@ void Candidates::generate(package::CandidateType type, bool force)
 	for(const package::Candidate& candidate : _candidates.at(type)) {
 		Gtk::TreeModel::Row row = *(_rows->append());
 
-		row[_rowData.Checked] = true;
+		row[_rowData.Checked] = false;
 		row[_rowData.Name] = candidate.FullName;
 		row[_rowData.Version] = candidate.Version;
 		row[_rowData.Architecture] = candidate.Architecture;
@@ -193,12 +211,42 @@ void Candidates::setColumnRender(Gtk::TreeViewColumn* column, Gtk::CellRenderer*
 		column->add_attribute(renderText->property_font_desc(), _rowData.Font);
 	} else if(Gtk::CellRendererToggle* renderToggle =
 				  dynamic_cast<Gtk::CellRendererToggle*>(render)) {
+		(void)renderToggle;
 		column->add_attribute(renderToggle->property_active(), _rowData.Checked);
-		// column->add_attribute(renderToggle->property_radio(), true);
 	}
 	column->add_attribute(render->property_xalign(), _rowData.Align);
 
 	column->set_alignment(0.5);
+}
+
+void Candidates::onToggleColumn(const Glib::ustring& path)
+{
+	Gtk::TreeModel::iterator iter;
+	if(get_model() == _sortModel) {
+		iter = _sortModel->get_iter(path);
+	} else {
+		iter = _rows->get_iter(path);
+	}
+
+	if(iter) {
+		(*iter)[_rowData.Checked] = !(*iter)[_rowData.Checked];
+	}
+}
+
+void Candidates::selectAll()
+{
+	if(!get_column(0)->get_visible()) return;
+
+	widget::ToggleButton* btnSelectAll =
+		utils::GetWidget<widget::ToggleButton>("ToggleButtonSelectAllAction",
+											   widget::Derived);
+
+	for(Gtk::TreeModel::Row row : _rows->children()) {
+		if(btnSelectAll->get_active() /* button is pressed */)
+			row[_rowData.Checked] = true;
+		else
+			row[_rowData.Checked] = false;
+	}
 }
 
 Candidates::RowType::RowType()

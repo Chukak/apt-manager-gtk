@@ -27,5 +27,11 @@ void MainWindow::initUI()
 		utils::GetWidget<widget::Button>("ButtonInstallAction", widget::Derived);
 	btnInstall->set_label("Install");
 	btnInstall->set_tooltip_text(btnInstall->get_label());
+
+	widget::ToggleButton* btnSelectAll =
+		utils::GetWidget<widget::ToggleButton>("ToggleButtonSelectAllAction",
+											   widget::Derived);
+	btnSelectAll->set_label("Select All");
+	btnSelectAll->set_tooltip_text(btnSelectAll->get_label());
 }
 } // namespace widget
