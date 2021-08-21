@@ -7,6 +7,7 @@
 #include <gtkmm/treeview.h>
 #include <gtkmm/builder.h>
 #include <gtkmm/liststore.h>
+#include <gtkmm/treemodelsort.h>
 
 namespace widget
 {
@@ -19,11 +20,9 @@ class Candidates : public Gtk::TreeView
     void generate(package::CandidateType type, bool force = false);
 
   private:
-    template<typename TYPE>
-    Gtk::TreeViewColumn* createColumn(Gtk::TreeModelColumn<TYPE>& colText);
-
-	void setRowStyle(Gtk::TreeModel::Row row);
-	void refreshActual();
+    void setRowStyle(Gtk::TreeModel::Row row);
+    void setColumnRender(Gtk::TreeViewColumn* column, Gtk::CellRenderer* render);
+    void refreshActual();
 
   private:
     class RowType : public Gtk::TreeModel::ColumnRecord
@@ -33,13 +32,18 @@ class Candidates : public Gtk::TreeView
 
 	  public:
 		Gtk::TreeModelColumn<bool> Checked;
-		Gtk::TreeModelColumn<Glib::ustring> Name;
-		Gtk::TreeModelColumn<Glib::ustring> Version;
-		Gtk::TreeModelColumn<Glib::ustring> Architecture;
+		Gtk::TreeModelColumn<Glib::ustring> Name, Version, Architecture, Origin, Size;
 		Gtk::TreeModelColumn<size_t> Number;
-		Gtk::TreeModelColumn<Gdk::RGBA> BackgroundColor;
-		Gtk::TreeModelColumn<Gdk::RGBA> ForegroundColor;
+
+		Gtk::TreeModelColumn<Gdk::RGBA> BackgroundColor, ForegroundColor;
 		Gtk::TreeModelColumn<Pango::FontDescription> Font;
+		Gtk::TreeModelColumn<float> Align;
+	};
+
+	class RowSort : public Gtk::TreeModelSort
+	{
+	  public:
+		RowSort(const ObjPtr<Gtk::ListStore>& model);
 	};
 
   private:
@@ -47,29 +51,8 @@ class Candidates : public Gtk::TreeView
     ObjPtr<Gtk::ListStore> _rows;
     std::map<package::CandidateType, package::CandidateList> _candidates;
     int32_t _currentType{-1};
+    ObjPtr<RowSort> _sortModel;
 };
-
-template<typename TYPE>
-Gtk::TreeViewColumn* Candidates::createColumn(Gtk::TreeModelColumn<TYPE>& colText)
-{
-	Gtk::CellRendererText* render = Gtk::manage(new Gtk::CellRendererText);
-
-	if(colText == _rowData.Architecture) {
-		render->set_fixed_size(10, 48);
-	} else if(colText == _rowData.Name) {
-		render->set_fixed_size(-1, 48);
-	}
-
-	Gtk::TreeViewColumn* column = Gtk::manage(new Gtk::TreeViewColumn("", *render));
-	column->set_alignment(0.5);
-
-	column->add_attribute(render->property_background_rgba(), _rowData.BackgroundColor);
-	column->add_attribute(render->property_foreground_rgba(), _rowData.ForegroundColor);
-	column->add_attribute(render->property_text(), colText);
-	column->add_attribute(render->property_font_desc(), _rowData.Font);
-
-	return column;
-}
 } // namespace widget
 
 #endif // CANDIDATES_H

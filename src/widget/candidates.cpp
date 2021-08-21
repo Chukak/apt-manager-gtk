@@ -4,39 +4,99 @@
 #include "button.h"
 
 #include <gtkmm/cellrenderertext.h>
+#include <gtkmm/cellrenderertoggle.h>
 
 namespace widget
 {
 Candidates::Candidates(BaseObjectType* cobject, const ObjPtr<Gtk::Builder>& refBuilder) :
-	Gtk::TreeView(cobject), _rows(Gtk::ListStore::create(_rowData))
+	Gtk::TreeView(cobject), _rows(Gtk::ListStore::create(_rowData)), _sortModel(nullptr)
 {
 	(void)refBuilder;
 
 	set_model(_rows);
 
 	{
-		Gtk::TreeViewColumn* col = createColumn(_rowData.Checked);
-		col->set_title("CHECKED");
+		Gtk::CellRendererToggle* render = Gtk::manage(new Gtk::CellRendererToggle);
+		render->set_fixed_size(80, 48);
+
+		Gtk::TreeViewColumn* col =
+			Gtk::manage(new Gtk::TreeViewColumn("CHECKED", *render));
+		setColumnRender(col, render);
+
+		append_column(*col);
+
+		col->set_sizing(Gtk::TREE_VIEW_COLUMN_FIXED);
+		col->set_fixed_width(80);
+		col->set_resizable(false);
+	}
+	{
+		Gtk::CellRendererText* render = Gtk::manage(new Gtk::CellRendererText);
+		render->set_fixed_size(-1, 48);
+
+		Gtk::TreeViewColumn* col = Gtk::manage(new Gtk::TreeViewColumn("NAME", *render));
+		setColumnRender(col, render);
+		col->add_attribute(render->property_text(), _rowData.Name);
 
 		append_column(*col);
 	}
 	{
-		Gtk::TreeViewColumn* col = createColumn(_rowData.Name);
-		col->set_title("NAME");
+		Gtk::CellRendererText* render = Gtk::manage(new Gtk::CellRendererText);
+		render->set_fixed_size(360, 48);
+
+		Gtk::TreeViewColumn* col =
+			Gtk::manage(new Gtk::TreeViewColumn("VERSION", *render));
+		setColumnRender(col, render);
+		col->add_attribute(render->property_text(), _rowData.Version);
 
 		append_column(*col);
+
+		col->set_sizing(Gtk::TREE_VIEW_COLUMN_FIXED);
+		col->set_fixed_width(360);
+		col->set_resizable(true);
 	}
 	{
-		Gtk::TreeViewColumn* col = createColumn(_rowData.Version);
-		col->set_title("VERSION");
+		Gtk::CellRendererText* render = Gtk::manage(new Gtk::CellRendererText);
+		render->set_fixed_size(380, 48);
+
+		Gtk::TreeViewColumn* col =
+			Gtk::manage(new Gtk::TreeViewColumn("ORIGIN", *render));
+		setColumnRender(col, render);
+		col->add_attribute(render->property_text(), _rowData.Origin);
 
 		append_column(*col);
+
+		col->set_sizing(Gtk::TREE_VIEW_COLUMN_FIXED);
+		col->set_fixed_width(380);
+		col->set_resizable(true);
 	}
 	{
-		Gtk::TreeViewColumn* col = createColumn(_rowData.Architecture);
-		col->set_title("Architecture");
+		Gtk::CellRendererText* render = Gtk::manage(new Gtk::CellRendererText);
+		render->set_fixed_size(120, 48);
+
+		Gtk::TreeViewColumn* col =
+			Gtk::manage(new Gtk::TreeViewColumn("ARCHITECTURE", *render));
+		setColumnRender(col, render);
+		col->add_attribute(render->property_text(), _rowData.Architecture);
 
 		append_column(*col);
+
+		col->set_sizing(Gtk::TREE_VIEW_COLUMN_FIXED);
+		col->set_fixed_width(120);
+		col->set_resizable(false);
+	}
+	{
+		Gtk::CellRendererText* render = Gtk::manage(new Gtk::CellRendererText);
+		render->set_fixed_size(120, 48);
+
+		Gtk::TreeViewColumn* col = Gtk::manage(new Gtk::TreeViewColumn("SIZE", *render));
+		setColumnRender(col, render);
+		col->add_attribute(render->property_text(), _rowData.Size);
+
+		append_column(*col);
+
+		col->set_sizing(Gtk::TREE_VIEW_COLUMN_FIXED);
+		col->set_fixed_width(120);
+		col->set_resizable(false);
 	}
 
 	widget::Button* btnUpdate =
@@ -69,35 +129,35 @@ void Candidates::generate(package::CandidateType type, bool force)
 	case package::Upgradable: {
 		get_column(0)->set_visible(true);
 
-		for(const package::Candidate& candidate : _candidates.at(type)) {
-			Gtk::TreeModel::Row row = *(_rows->append());
+		_sortModel = ObjPtr<RowSort>(new RowSort(_rows));
+		_sortModel->set_sort_column(_rowData.Name, Gtk::SORT_ASCENDING);
+		set_model(_sortModel);
 
-			row[_rowData.Checked] = true;
-			row[_rowData.Name] = candidate.FullName;
-			row[_rowData.Version] = candidate.Version;
-			row[_rowData.Architecture] = candidate.Architecture;
-			row[_rowData.Number] = candidate.Number;
-
-			setRowStyle(row);
-		}
 		break;
 	}
 	case package::Installed: {
 		get_column(0)->set_visible(false);
 
-		for(const package::Candidate& candidate : _candidates.at(type)) {
-			Gtk::TreeModel::Row row = *(_rows->append());
+		_sortModel.reset();
+		set_model(_rows);
 
-			// row[_rowData.Checked] = true;
-			row[_rowData.Name] = candidate.FullName;
-			row[_rowData.Version] = candidate.Version;
-			row[_rowData.Architecture] = candidate.Architecture;
-			row[_rowData.Number] = candidate.Number;
-
-			setRowStyle(row);
-		}
 		break;
 	}
+	}
+
+	for(const package::Candidate& candidate : _candidates.at(type)) {
+		Gtk::TreeModel::Row row = *(_rows->append());
+
+		row[_rowData.Checked] = true;
+		row[_rowData.Name] = candidate.FullName;
+		row[_rowData.Version] = candidate.Version;
+		row[_rowData.Architecture] = candidate.Architecture;
+		row[_rowData.Origin] = candidate.Origin;
+		row[_rowData.Number] = candidate.Number;
+		row[_rowData.Size] = candidate.SizeKB;
+		row[_rowData.Align] = 0.5;
+
+		setRowStyle(row);
 	}
 
 	_currentType = type;
@@ -123,16 +183,41 @@ void Candidates::setRowStyle(Gtk::TreeModel::Row row)
 	row[_rowData.Font] = Pango::FontDescription("ROBOTO 16");
 }
 
+void Candidates::setColumnRender(Gtk::TreeViewColumn* column, Gtk::CellRenderer* render)
+{
+	if(Gtk::CellRendererText* renderText = dynamic_cast<Gtk::CellRendererText*>(render)) {
+		column->add_attribute(renderText->property_background_rgba(),
+							  _rowData.BackgroundColor);
+		column->add_attribute(renderText->property_foreground_rgba(),
+							  _rowData.ForegroundColor);
+		column->add_attribute(renderText->property_font_desc(), _rowData.Font);
+	} else if(Gtk::CellRendererToggle* renderToggle =
+				  dynamic_cast<Gtk::CellRendererToggle*>(render)) {
+		column->add_attribute(renderToggle->property_active(), _rowData.Checked);
+		// column->add_attribute(renderToggle->property_radio(), true);
+	}
+	column->add_attribute(render->property_xalign(), _rowData.Align);
+
+	column->set_alignment(0.5);
+}
+
 Candidates::RowType::RowType()
 {
 	add(Checked);
 	add(Name);
 	add(Version);
 	add(Architecture);
+	add(Origin);
 	add(Number);
+	add(Size);
 
 	add(BackgroundColor);
 	add(ForegroundColor);
 	add(Font);
+	add(Align);
 }
+
+Candidates::RowSort::RowSort(const ObjPtr<Gtk::ListStore>& model) :
+	Gtk::TreeModelSort(model)
+{}
 } // namespace widget
