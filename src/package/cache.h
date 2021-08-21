@@ -75,9 +75,10 @@ class Cache
     /**
      * @brief getCandidates
      * @param type Type of candidates
+     * @param ok Result of all function operation
      * @return A list of candidates.
      */
-    CandidateList getCandidates(CandidateType type);
+    CandidateList getCandidates(CandidateType type, bool& ok);
     /**
      * @brief installCandidates
      * Installs candidates from the passed list.
