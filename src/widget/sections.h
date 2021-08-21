@@ -16,9 +16,8 @@ class Sections : public Gtk::TreeView
     Sections(BaseObjectType* cobject, const ObjPtr<Gtk::Builder>& refBuilder);
     virtual ~Sections() = default;
 
-  protected:
-    void on_row_activated(const Gtk::TreeModel::Path& path,
-                          Gtk::TreeViewColumn* column) override;
+  private:
+    void onRowSelected();
 
   private:
     class RowType : public Gtk::TreeModel::ColumnRecord
@@ -31,6 +30,7 @@ class Sections : public Gtk::TreeView
 		Gtk::TreeModelColumn<Gdk::RGBA> BackgroundColor;
 		Gtk::TreeModelColumn<Gdk::RGBA> ForegroundColor;
 		Gtk::TreeModelColumn<Pango::FontDescription> Font;
+		Gtk::TreeModelColumn<int32_t> PackageType;
 	};
 
   private:

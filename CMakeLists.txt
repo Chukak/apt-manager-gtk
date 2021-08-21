@@ -12,7 +12,8 @@ set(SOURCE_FILES
     src/package/textacquirestatus.cpp
     src/widget/sections.cpp
     src/widget/mainwindow.cpp
-    src/widget/button.cpp)
+    src/widget/button.cpp
+    src/widget/candidates.cpp)
 
 set(PRIVATE_HEADER_FILES
     src/package/cache.h
@@ -21,7 +22,8 @@ set(PRIVATE_HEADER_FILES
     src/widget/sections.h
     src/type.h
     src/widget/mainwindow.h
-    src/widget/button.h)
+    src/widget/button.h
+    src/widget/candidates.h)
 
 set(CXX_PROJECT_COMPILE_FLAGS -O -fstack-protector
     -Wall -pedantic -Wextra -Wcast-align -Wcomment -Wconversion

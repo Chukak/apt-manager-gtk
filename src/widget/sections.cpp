@@ -1,4 +1,5 @@
 #include "sections.h"
+#include "candidates.h"
 
 #include "../package/cache.h"
 #include "../utils.h"
@@ -48,16 +49,29 @@ Sections::Sections(BaseObjectType* cobject, const ObjPtr<Gtk::Builder>& refBuild
 		background.set_rgba(228, 225, 237, 0.04);
 
 		row[_rowData.BackgroundColor] = background;
-		row[_rowData.ForegroundColor] = Gdk::RGBA("#F5F2FF");
+		if(getuid() > 0 /* non-root */) {
+			row[_rowData.ForegroundColor] = Gdk::RGBA("#F5F2FF");
+		} else {
+			row[_rowData.ForegroundColor] = Gdk::RGBA("#0F0F0F");
+		}
 		row[_rowData.Font] = Pango::FontDescription("ROBOTO 16");
+		row[_rowData.PackageType] = t;
 	}
-}
 
-void Sections::on_row_activated(const Gtk::TreeModel::Path& path,
-								Gtk::TreeViewColumn* column)
+	get_selection()->signal_changed().connect(
+		sigc::mem_fun(*this, &Sections::onRowSelected));
+} // namespace widget
+
+void Sections::onRowSelected()
 {
-	(void)path;
-	(void)column;
+	Gtk::TreeModel::iterator iter = get_selection()->get_selected();
+	if(iter) {
+		int32_t type = (*iter)[_rowData.PackageType];
+
+		widget::Candidates* cand =
+			utils::GetWidget<widget::Candidates>("CandidatesTree", widget::Derived);
+		cand->generate(static_cast<package::CandidateType>(type));
+	}
 }
 
 Sections::RowType::RowType()
@@ -66,5 +80,6 @@ Sections::RowType::RowType()
 	add(BackgroundColor);
 	add(ForegroundColor);
 	add(Font);
+	add(PackageType);
 }
 } // namespace widget

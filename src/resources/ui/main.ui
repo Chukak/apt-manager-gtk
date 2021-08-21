@@ -47,12 +47,22 @@
               </packing>
             </child>
             <child>
-              <object class="GtkTreeView" id="CandidatesTree">
+              <object class="GtkScrolledWindow">
+                <property name="name">CandidatesScrollWindow</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="hexpand">True</property>
-                <child internal-child="selection">
-                  <object class="GtkTreeSelection"/>
+                <property name="vexpand">True</property>
+                <property name="shadow_type">in</property>
+                <child>
+                  <object class="GtkTreeView" id="CandidatesTree">
+                    <property name="visible">True</property>
+                    <property name="can_focus">True</property>
+                    <property name="hexpand">True</property>
+                    <child internal-child="selection">
+                      <object class="GtkTreeSelection"/>
+                    </child>
+                  </object>
                 </child>
               </object>
               <packing>
@@ -81,6 +91,7 @@
                 <property name="height_request">38</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
+                <property name="focus_on_click">False</property>
                 <property name="receives_default">True</property>
                 <property name="margin_left">48</property>
               </object>
@@ -98,6 +109,7 @@
                 <property name="height_request">38</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
+                <property name="focus_on_click">False</property>
                 <property name="receives_default">True</property>
                 <property name="margin_left">16</property>
               </object>
@@ -115,6 +127,7 @@
                 <property name="height_request">38</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
+                <property name="focus_on_click">False</property>
                 <property name="receives_default">True</property>
                 <property name="margin_right">20</property>
                 <property name="image_position">right</property>
