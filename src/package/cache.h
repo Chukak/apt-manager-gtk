@@ -22,6 +22,7 @@ struct Candidate
 		Architecture,     //! Architecture
 		Archive,          //! Archive name
 		Origin,           //! Origin
+		SizeKB,           //! Size in kilobytes
 		Component;        //!
 
 	bool operator==(const Candidate& rhs);

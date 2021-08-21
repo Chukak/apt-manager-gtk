@@ -312,6 +312,16 @@ Candidate Cache::createCandidate(pkgCache::PkgIterator packetIter, bool& ok)
 	if(verFileIt.File().Architecture())
 		newCandidate.Architecture = verFileIt.File().Architecture();
 
+	struct stat Buf;
+	if(stat(verFileIt.File().FileName(), &Buf) != 0) {
+		DEBUG() << "stat(verFileIt.File().FileName(), &Buf) == 0;";
+		newCandidate.SizeKB = "Unknown";
+	} else {
+		// TODO: is really valid size?
+		newCandidate.SizeKB = SizeToStr(static_cast<double>(Buf.st_size));
+		newCandidate.SizeKB += "B";
+	}
+
 	return newCandidate;
 }
 
