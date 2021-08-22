@@ -2,9 +2,17 @@
 
 #include "../utils.h"
 #include "button.h"
+#include "progressbar.h"
+#include "../extension/progressrange.h"
+#include "../extension/progresspulse.h"
+
+#include "../package/progressacquirestatus.h"
 
 #include <gtkmm/cellrenderertext.h>
 #include <gtkmm/cellrenderertoggle.h>
+#include <gtkmm/main.h>
+
+#include <thread>
 
 namespace widget
 {
@@ -115,6 +123,34 @@ Candidates::Candidates(BaseObjectType* cobject, const ObjPtr<Gtk::Builder>& refB
 
 void Candidates::generate(package::CandidateType type, bool force)
 {
+	extension::ProgressRange progressRange;
+	extension::ProgressPulse progressPulse;
+
+	widget::ProgressBar* progressBar =
+		utils::GetWidget<widget::ProgressBar>("MainProgressBar", widget::Derived);
+	progressBar->set_fraction(0.0);
+
+	// range
+	progressRange.signal_rangeChanged().connect(
+		sigc::mem_fun(*progressBar, &ProgressBar::setRange));
+	progressRange.signal_changed().connect([progressBar](double, double step) {
+		progressBar->step(step);
+		// next event
+		if(Gtk::Main::events_pending()) {
+			Gtk::Main::iteration(false);
+		}
+	});
+	progressRange.signal_reseted().connect(
+		[progressBar]() { progressBar->set_fraction(0.0); });
+
+	// pulse
+	progressPulse.signal_pulsed().connect([progressBar]() {
+		progressBar->pulse(); // next event
+		if(Gtk::Main::events_pending()) {
+			Gtk::Main::iteration(false);
+		}
+	});
+
 	if(_candidates.find(type) == _candidates.end() || force) {
 		// auto refresh!
 
@@ -124,8 +160,10 @@ void Candidates::generate(package::CandidateType type, bool force)
 			return;
 		}
 
+		package::ProgressAcquireStatus status(&progressPulse);
 		bool ok;
-		_candidates[type] = cache.getCandidates(type, ok);
+		_candidates[type] = cache.getCandidates(type, ok, &progressRange, &status);
+
 		if(!ok) {
 			// todo: show error
 			return;
@@ -163,6 +201,10 @@ void Candidates::generate(package::CandidateType type, bool force)
 	}
 	}
 
+	progressRange.setRange(0, static_cast<int>(_candidates.at(type).size()));
+	progressRange.reset();
+	progressBar->set_fraction(0.0);
+
 	for(const package::Candidate& candidate : _candidates.at(type)) {
 		Gtk::TreeModel::Row row = *(_rows->append());
 
@@ -176,10 +218,12 @@ void Candidates::generate(package::CandidateType type, bool force)
 		row[_rowData.Align] = 0.5;
 
 		setRowStyle(row);
+
+		progressRange.increment();
 	}
 
 	_currentType = type;
-}
+} // namespace widget
 
 void Candidates::refreshActual()
 {

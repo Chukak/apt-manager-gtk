@@ -33,5 +33,6 @@ void MainWindow::initUI()
 											   widget::Derived);
 	btnSelectAll->set_label("Select All");
 	btnSelectAll->set_tooltip_text(btnSelectAll->get_label());
+	btnSelectAll->set_visible(false);
 }
 } // namespace widget
