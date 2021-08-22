@@ -72,13 +72,16 @@ Cache::Cache()
 	_isValid = true;
 }
 
-CandidateList Cache::getCandidates(CandidateType type, bool& ok)
+CandidateList
+Cache::getCandidates(CandidateType type, bool& ok, Progress* pg, pkgAcquireStatus* status)
 {
 	CandidateList result;
 	ok = true;
 
 	switch(type) {
 	case CandidateType::Installed: {
+		if(pg) pg->setRange(0, _cacheFile->GetPkgCache()->Head().PackageCount);
+
 		for(pkgCache::GrpIterator group = _cacheFile->GetPkgCache()->GrpBegin();
 			group != _cacheFile->GetPkgCache()->GrpEnd();
 			++group) {
@@ -87,6 +90,8 @@ CandidateList Cache::getCandidates(CandidateType type, bool& ok)
 				bool okCreate;
 				Candidate newCandidate = createCandidate(packet, okCreate);
 				if(okCreate) result.push_back(newCandidate);
+
+				if(pg) pg->increment();
 			}
 		}
 		DEBUG() << "Successfully generated all the installed packages (count: "
@@ -94,12 +99,19 @@ CandidateList Cache::getCandidates(CandidateType type, bool& ok)
 		break;
 	}
 	case CandidateType::Upgradable: {
+		if(pg) {
+			pg->setRange(0, 1);
+			pg->reset();
+		}
+
 		if(!_cacheFile->BuildSourceList()) {
 			DEBUG() << "_cacheFile->BuildSourceList() == false";
 			utils::PrintPkgError();
 			ok = false;
 			break;
 		}
+
+		if(pg) pg->increment();
 
 		pkgSourceList* sourceListPkgs = _cacheFile->GetSourceList();
 		if(!sourceListPkgs) {
@@ -109,9 +121,13 @@ CandidateList Cache::getCandidates(CandidateType type, bool& ok)
 		}
 
 		{
-			std::stringstream textStreamStatus;
-			TextAcquireStatus updateStatus(textStreamStatus);
-			ListUpdate(updateStatus, *sourceListPkgs);
+			if(status) {
+				ListUpdate(*status, *sourceListPkgs);
+			} else {
+				std::stringstream textStreamStatus;
+				TextAcquireStatus updateStatus(textStreamStatus);
+				ListUpdate(updateStatus, *sourceListPkgs);
+			}
 		}
 
 		_cacheFile->RemoveCaches();
@@ -131,6 +147,11 @@ CandidateList Cache::getCandidates(CandidateType type, bool& ok)
 			break;
 		}
 
+		if(pg) {
+			pg->setRange(0, packetCache->Head().PackageCount);
+			pg->reset();
+		}
+
 		for(pkgCache::PkgIterator packet = packetCache->PkgBegin(); !packet.end();
 			++packet) {
 			pkgDepCache::StateCache& state = (*packetCache)[packet];
@@ -138,6 +159,8 @@ CandidateList Cache::getCandidates(CandidateType type, bool& ok)
 				bool okCreate;
 				Candidate newCandidate = createCandidate(packet, okCreate);
 				if(okCreate) result.push_back(newCandidate);
+
+				if(pg) pg->increment();
 			}
 		}
 		DEBUG() << "Successfully generated all the upgradable packages (count: "

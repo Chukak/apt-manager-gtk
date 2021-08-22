@@ -1,7 +1,10 @@
 #ifndef CACHE_H
 #define CACHE_H
 
+#include "../type.h"
+
 #include <apt-pkg/cachefile.h>
+#include <apt-pkg/acquire.h>
 
 #include <memory>
 #include <iostream>
@@ -75,11 +78,18 @@ class Cache
     inline pkgCacheFile& objectRef() { return (*_cacheFile); }
     /**
      * @brief getCandidates
+     * Generates candidates by type. If the pointer to the progress is not null, updates
+     * the progress value.
      * @param type Type of candidates
      * @param ok Result of all function operation
+     * @param progress The pointer to the Progress object.
+     * @param status The status of getting candidated.
      * @return A list of candidates.
      */
-    CandidateList getCandidates(CandidateType type, bool& ok);
+    CandidateList getCandidates(CandidateType type,
+                                bool& ok,
+                                Progress* progress = nullptr,
+                                pkgAcquireStatus* status = nullptr);
     /**
      * @brief installCandidates
      * Installs candidates from the passed list.
