@@ -13,7 +13,11 @@ set(SOURCE_FILES
     src/widget/sections.cpp
     src/widget/mainwindow.cpp
     src/widget/button.cpp
-    src/widget/candidates.cpp)
+    src/widget/candidates.cpp
+    src/widget/progressbar.cpp
+    src/extension/progressrange.cpp
+    src/extension/progresspulse.cpp
+    src/package/progressacquirestatus.cpp)
 
 set(PRIVATE_HEADER_FILES
     src/package/cache.h
@@ -23,7 +27,11 @@ set(PRIVATE_HEADER_FILES
     src/type.h
     src/widget/mainwindow.h
     src/widget/button.h
-    src/widget/candidates.h)
+    src/widget/candidates.h
+    src/widget/progressbar.h
+    src/extension/progressrange.h
+    src/extension/progresspulse.h
+    src/package/progressacquirestatus.h)
 
 set(CXX_PROJECT_COMPILE_FLAGS -O -fstack-protector
     -Wall -pedantic -Wextra -Wcast-align -Wcomment -Wconversion

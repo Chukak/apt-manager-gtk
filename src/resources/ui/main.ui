@@ -79,82 +79,122 @@
           </packing>
         </child>
         <child>
-          <object class="GtkButtonBox">
-            <property name="height_request">60</property>
+          <object class="GtkBox" id="BottomBox">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
-            <property name="layout_style">start</property>
             <child>
-              <object class="GtkButton" id="ButtonUpdateAction">
-                <property name="label" translatable="yes">button</property>
-                <property name="width_request">100</property>
-                <property name="height_request">38</property>
+              <object class="GtkButtonBox">
+                <property name="height_request">60</property>
                 <property name="visible">True</property>
-                <property name="can_focus">True</property>
-                <property name="focus_on_click">False</property>
-                <property name="receives_default">True</property>
-                <property name="margin_left">48</property>
+                <property name="can_focus">False</property>
+                <property name="layout_style">start</property>
+                <child>
+                  <object class="GtkButton" id="ButtonUpdateAction">
+                    <property name="label" translatable="yes">button</property>
+                    <property name="width_request">100</property>
+                    <property name="height_request">38</property>
+                    <property name="visible">True</property>
+                    <property name="can_focus">True</property>
+                    <property name="focus_on_click">False</property>
+                    <property name="receives_default">True</property>
+                    <property name="margin_left">48</property>
+                  </object>
+                  <packing>
+                    <property name="expand">True</property>
+                    <property name="fill">True</property>
+                    <property name="position">0</property>
+                    <property name="non_homogeneous">True</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkButton" id="ButtonInstallAction">
+                    <property name="label" translatable="yes">button</property>
+                    <property name="width_request">100</property>
+                    <property name="height_request">38</property>
+                    <property name="visible">True</property>
+                    <property name="can_focus">True</property>
+                    <property name="focus_on_click">False</property>
+                    <property name="receives_default">True</property>
+                    <property name="margin_left">16</property>
+                  </object>
+                  <packing>
+                    <property name="expand">True</property>
+                    <property name="fill">True</property>
+                    <property name="position">1</property>
+                    <property name="non_homogeneous">True</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkToggleButton" id="ToggleButtonSelectAllAction">
+                    <property name="label" translatable="yes">togglebutton</property>
+                    <property name="width_request">100</property>
+                    <property name="height_request">38</property>
+                    <property name="visible">True</property>
+                    <property name="can_focus">True</property>
+                    <property name="receives_default">True</property>
+                    <property name="margin_left">10</property>
+                  </object>
+                  <packing>
+                    <property name="expand">True</property>
+                    <property name="fill">True</property>
+                    <property name="position">2</property>
+                  </packing>
+                </child>
               </object>
               <packing>
-                <property name="expand">True</property>
+                <property name="expand">False</property>
                 <property name="fill">True</property>
                 <property name="position">0</property>
-                <property name="non_homogeneous">True</property>
               </packing>
             </child>
             <child>
-              <object class="GtkButton" id="ButtonInstallAction">
-                <property name="label" translatable="yes">button</property>
-                <property name="width_request">100</property>
+              <object class="GtkProgressBar" id="MainProgressBar">
+                <property name="width_request">200</property>
                 <property name="height_request">38</property>
                 <property name="visible">True</property>
-                <property name="can_focus">True</property>
-                <property name="focus_on_click">False</property>
-                <property name="receives_default">True</property>
-                <property name="margin_left">16</property>
+                <property name="can_focus">False</property>
+                <property name="margin_left">20</property>
+                <property name="margin_right">10</property>
+                <property name="margin_bottom">11</property>
+                <property name="pulse_step">0</property>
+                <property name="ellipsize">middle</property>
               </object>
               <packing>
                 <property name="expand">True</property>
                 <property name="fill">True</property>
                 <property name="position">1</property>
-                <property name="non_homogeneous">True</property>
               </packing>
             </child>
             <child>
-              <object class="GtkToggleButton" id="ToggleButtonSelectAllAction">
-                <property name="label" translatable="yes">togglebutton</property>
-                <property name="width_request">100</property>
-                <property name="height_request">38</property>
+              <object class="GtkButtonBox">
                 <property name="visible">True</property>
-                <property name="can_focus">True</property>
-                <property name="receives_default">True</property>
-                <property name="margin_left">10</property>
+                <property name="can_focus">False</property>
+                <property name="layout_style">start</property>
+                <child>
+                  <object class="GtkButton" id="ButtonExitAction">
+                    <property name="label" translatable="yes">button</property>
+                    <property name="width_request">90</property>
+                    <property name="height_request">38</property>
+                    <property name="visible">True</property>
+                    <property name="can_focus">True</property>
+                    <property name="focus_on_click">False</property>
+                    <property name="receives_default">True</property>
+                    <property name="margin_right">10</property>
+                    <property name="image_position">right</property>
+                  </object>
+                  <packing>
+                    <property name="expand">True</property>
+                    <property name="fill">True</property>
+                    <property name="pack_type">end</property>
+                    <property name="position">0</property>
+                    <property name="secondary">True</property>
+                  </packing>
+                </child>
               </object>
               <packing>
-                <property name="expand">True</property>
+                <property name="expand">False</property>
                 <property name="fill">True</property>
-                <property name="position">2</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkButton" id="ButtonExitAction">
-                <property name="label" translatable="yes">button</property>
-                <property name="width_request">90</property>
-                <property name="height_request">38</property>
-                <property name="visible">True</property>
-                <property name="can_focus">True</property>
-                <property name="focus_on_click">False</property>
-                <property name="receives_default">True</property>
-                <property name="margin_right">20</property>
-                <property name="image_position">right</property>
-              </object>
-              <packing>
-                <property name="expand">True</property>
-                <property name="fill">True</property>
-                <property name="pack_type">end</property>
-                <property name="position">2</property>
-                <property name="secondary">True</property>
-                <property name="non_homogeneous">True</property>
+                <property name="position">3</property>
               </packing>
             </child>
           </object>

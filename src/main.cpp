@@ -4,6 +4,7 @@
 #include "widget/sections.h"
 #include "widget/mainwindow.h"
 #include "widget/button.h"
+#include "widget/progressbar.h"
 
 #include <gtkmm/application.h>
 #include <gtkmm/builder.h>
@@ -28,6 +29,10 @@ int main(int argc, char** argv)
 	widget::Sections* sectionsView =
 		utils::GetWidget<widget::Sections>("SectionsTree", widget::Derived);
 	(void)sectionsView;
+
+	widget::ProgressBar* progressBar =
+		utils::GetWidget<widget::ProgressBar>("MainProgressBar", widget::Derived);
+	progressBar->set_fraction(1.0);
 
 	widget::Button* btnExit =
 		utils::GetWidget<widget::Button>("ButtonExitAction", widget::Derived);
