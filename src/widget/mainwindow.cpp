@@ -32,5 +32,9 @@ void MainWindow::initUI()
 	btnSelectAll->set_label("Select All");
 	btnSelectAll->set_tooltip_text(btnSelectAll->get_label());
 	btnSelectAll->set_visible(false);
+
+	widget::Button* btnOpenLog = utils::GetWidgetDerived<widget::Button>("ButtonOpenLog");
+	btnOpenLog->set_label("Open Log");
+	btnOpenLog->set_tooltip_text(btnSelectAll->get_label());
 }
 } // namespace widget

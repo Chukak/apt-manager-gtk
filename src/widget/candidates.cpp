@@ -11,6 +11,7 @@
 #include <gtkmm/cellrenderertext.h>
 #include <gtkmm/cellrenderertoggle.h>
 #include <gtkmm/main.h>
+#include <gtkmm/messagedialog.h>
 
 #include <thread>
 
@@ -112,12 +113,11 @@ Candidates::Candidates(BaseObjectType* cobject, const ObjPtr<Gtk::Builder>& refB
 	}
 
 	widget::Button* btnUpdate =
-		utils::GetWidget<widget::Button>("ButtonUpdateAction", widget::Derived);
+		utils::GetWidgetDerived<widget::Button>("ButtonUpdateAction");
 	btnUpdate->signal_clicked().connect(sigc::mem_fun(*this, &Candidates::refreshActual));
 
 	widget::ToggleButton* btnSelectAll =
-		utils::GetWidget<widget::ToggleButton>("ToggleButtonSelectAllAction",
-											   widget::Derived);
+		utils::GetWidgetDerived<widget::ToggleButton>("ToggleButtonSelectAllAction");
 	btnSelectAll->signal_clicked().connect(sigc::mem_fun(*this, &Candidates::selectAll));
 }
 
@@ -127,7 +127,7 @@ void Candidates::generate(package::CandidateType type, bool force)
 	extension::ProgressPulse progressPulse;
 
 	widget::ProgressBar* progressBar =
-		utils::GetWidget<widget::ProgressBar>("MainProgressBar", widget::Derived);
+		utils::GetWidgetDerived<widget::ProgressBar>("MainProgressBar");
 	progressBar->set_fraction(0.0);
 
 	// range
@@ -156,7 +156,10 @@ void Candidates::generate(package::CandidateType type, bool force)
 
 		package::Cache cache;
 		if(!cache.IsValid()) {
-			// todo: show error
+			Gtk::MessageDialog dialog("The package cache is invalid.");
+			dialog.set_title("Warning!");
+			dialog.run();
+
 			return;
 		}
 
@@ -165,7 +168,10 @@ void Candidates::generate(package::CandidateType type, bool force)
 		_candidates[type] = cache.getCandidates(type, ok, &progressRange, &status);
 
 		if(!ok) {
-			// todo: show error
+			Gtk::MessageDialog dialog("Errors occurred while updating the cache.");
+			dialog.set_title("Warning!");
+			dialog.run();
+
 			return;
 		}
 	}
@@ -173,8 +179,7 @@ void Candidates::generate(package::CandidateType type, bool force)
 	_rows->clear();
 
 	widget::ToggleButton* btnSelectAll =
-		utils::GetWidget<widget::ToggleButton>("ToggleButtonSelectAllAction",
-											   widget::Derived);
+		utils::GetWidgetDerived<widget::ToggleButton>("ToggleButtonSelectAllAction");
 
 	switch(type) {
 	case package::Upgradable: {
@@ -282,8 +287,7 @@ void Candidates::selectAll()
 	if(!get_column(0)->get_visible()) return;
 
 	widget::ToggleButton* btnSelectAll =
-		utils::GetWidget<widget::ToggleButton>("ToggleButtonSelectAllAction",
-											   widget::Derived);
+		utils::GetWidgetDerived<widget::ToggleButton>("ToggleButtonSelectAllAction");
 
 	for(Gtk::TreeModel::Row row : _rows->children()) {
 		if(btnSelectAll->get_active() /* button is pressed */)

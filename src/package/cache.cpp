@@ -127,6 +127,8 @@ Cache::getCandidates(CandidateType type, bool& ok, Progress* pg, pkgAcquireStatu
 				std::stringstream textStreamStatus;
 				TextAcquireStatus updateStatus(textStreamStatus);
 				ListUpdate(updateStatus, *sourceListPkgs);
+
+				DEBUG() << textStreamStatus.str();
 			}
 		}
 

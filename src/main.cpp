@@ -5,6 +5,8 @@
 #include "widget/mainwindow.h"
 #include "widget/button.h"
 #include "widget/progressbar.h"
+#include "widget/logwindow.h"
+#include "widget/candidates.h"
 
 #include <gtkmm/application.h>
 #include <gtkmm/builder.h>
@@ -25,6 +27,23 @@ int main(int argc, char** argv)
 	widget::MainWindow* appWin =
 		utils::GetWidgetDerived<widget::MainWindow>("MainWindow");
 	appWin->initUI();
+
+	widget::LogWindow* logView =
+		utils::GetWidgetDerived<widget::LogWindow>("LogTextView");
+	utils::SetErrorLog(logView->log());
+	utils::SetLog(logView->log());
+
+	widget::Button* btnOpenLog = utils::GetWidgetDerived<widget::Button>("ButtonOpenLog");
+	btnOpenLog->onClicked([logView, btnOpenLog]() {
+		Gtk::Window* t = nullptr;
+		utils::GetBuilderUI()->get_widget("LogWindow", t);
+
+		if(t && !t->is_visible()) t->show();
+	});
+
+	widget::Candidates* candidatesView =
+		utils::GetWidgetDerived<widget::Candidates>("CandidatesTree");
+	(void)candidatesView;
 
 	widget::Sections* sectionsView =
 		utils::GetWidgetDerived<widget::Sections>("SectionsTree");
