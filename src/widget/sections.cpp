@@ -69,7 +69,7 @@ void Sections::onRowSelected()
 		int32_t type = (*iter)[_rowData.PackageType];
 
 		widget::Candidates* cand =
-			utils::GetWidget<widget::Candidates>("CandidatesTree", widget::Derived);
+			utils::GetWidgetDerived<widget::Candidates>("CandidatesTree");
 		cand->generate(static_cast<package::CandidateType>(type));
 	}
 }

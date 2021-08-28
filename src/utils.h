@@ -134,18 +134,6 @@ class Debug
 #define WRAP_EXCPT(EXCTYPE, CODE) WRAP_EXCPT_MSG(EXCTYPE, CODE, "")
 } // namespace utils
 
-namespace widget
-{
-/**
- * @brief The WidgetType enum
- */
-enum WidgetType
-{
-	Default,
-	Derived
-};
-} // namespace widget
-
 namespace utils
 {
 /**
@@ -155,29 +143,19 @@ namespace utils
 ObjPtr<Gtk::Builder> GetBuilderUI();
 
 /**
- * @brief GetWidget
+ * @brief GetWidgetDerived
  * Initialize a widget from the builder by type.
  * @tparam Widget class
  * @param widgetID Widget ID
- * @param type Widget type
  * @return The widget object.
  */
 template<typename TYPE>
-TYPE* GetWidget(const std::string& widgetID, widget::WidgetType type = widget::Default)
+TYPE* GetWidgetDerived(const std::string& widgetID)
 {
 	TYPE* t = nullptr;
 	WRAP_EXCPT_MSG(
 		std::exception,
-		{
-			switch(type) {
-			case widget::Default:
-				GetBuilderUI()->get_widget(widgetID, t);
-				break;
-			case widget::Derived:
-				GetBuilderUI()->get_widget_derived(widgetID, t);
-				break;
-			}
-		},
+		{ GetBuilderUI()->get_widget_derived(widgetID, t); },
 		std::string("\nCheck the '") + UI_FILENAME + std::string("' file."));
 	return t;
 }

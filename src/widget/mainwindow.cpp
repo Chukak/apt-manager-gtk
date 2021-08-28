@@ -13,24 +13,22 @@ MainWindow::MainWindow(BaseObjectType* cobject, const ObjPtr<Gtk::Builder>& refB
 
 void MainWindow::initUI()
 {
-	widget::Button* btnExit =
-		utils::GetWidget<widget::Button>("ButtonExitAction", widget::Derived);
+	widget::Button* btnExit = utils::GetWidgetDerived<widget::Button>("ButtonExitAction");
 	btnExit->set_label("Exit");
 	btnExit->set_tooltip_text(btnExit->get_label());
 
 	widget::Button* btnUpdate =
-		utils::GetWidget<widget::Button>("ButtonUpdateAction", widget::Derived);
+		utils::GetWidgetDerived<widget::Button>("ButtonUpdateAction");
 	btnUpdate->set_label("Refresh");
 	btnUpdate->set_tooltip_text(btnUpdate->get_label());
 
 	widget::Button* btnInstall =
-		utils::GetWidget<widget::Button>("ButtonInstallAction", widget::Derived);
+		utils::GetWidgetDerived<widget::Button>("ButtonInstallAction");
 	btnInstall->set_label("Install");
 	btnInstall->set_tooltip_text(btnInstall->get_label());
 
 	widget::ToggleButton* btnSelectAll =
-		utils::GetWidget<widget::ToggleButton>("ToggleButtonSelectAllAction",
-											   widget::Derived);
+		utils::GetWidgetDerived<widget::ToggleButton>("ToggleButtonSelectAllAction");
 	btnSelectAll->set_label("Select All");
 	btnSelectAll->set_tooltip_text(btnSelectAll->get_label());
 	btnSelectAll->set_visible(false);

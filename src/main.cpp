@@ -23,19 +23,18 @@ int main(int argc, char** argv)
 	ObjPtr<Gtk::Application> app(Gtk::Application::create(argc, argv));
 
 	widget::MainWindow* appWin =
-		utils::GetWidget<widget::MainWindow>("MainWindow", widget::Derived);
+		utils::GetWidgetDerived<widget::MainWindow>("MainWindow");
 	appWin->initUI();
 
 	widget::Sections* sectionsView =
-		utils::GetWidget<widget::Sections>("SectionsTree", widget::Derived);
+		utils::GetWidgetDerived<widget::Sections>("SectionsTree");
 	(void)sectionsView;
 
 	widget::ProgressBar* progressBar =
-		utils::GetWidget<widget::ProgressBar>("MainProgressBar", widget::Derived);
+		utils::GetWidgetDerived<widget::ProgressBar>("MainProgressBar");
 	progressBar->set_fraction(1.0);
 
-	widget::Button* btnExit =
-		utils::GetWidget<widget::Button>("ButtonExitAction", widget::Derived);
+	widget::Button* btnExit = utils::GetWidgetDerived<widget::Button>("ButtonExitAction");
 	btnExit->onClicked([&app]() { app->quit(); });
 
 	return app->run(*appWin);
