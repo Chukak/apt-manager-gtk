@@ -159,6 +159,13 @@ void Candidates::generate(package::CandidateType type, bool force)
 
 	DEBUG() << "Widget '" << progressBar->get_name() << "': was configured.";
 
+	utils::widget::EnableWidgets(false,
+								 "ButtonUpdateAction",
+								 "ButtonInstallAction",
+								 "ToggleButtonSelectAllAction",
+								 "ButtonOpenLog",
+								 "SectionsTree");
+
 	if(_candidates.find(type) == _candidates.end() || force) {
 		// auto refresh!
 
@@ -234,6 +241,13 @@ void Candidates::generate(package::CandidateType type, bool force)
 
 		progressRange.increment();
 	}
+
+	utils::widget::EnableWidgets(true,
+								 "ButtonUpdateAction",
+								 "ButtonInstallAction",
+								 "ToggleButtonSelectAllAction",
+								 "ButtonOpenLog",
+								 "SectionsTree");
 
 	DEBUG() << "Widget '" << get_name() << "': added new rows successfully.";
 

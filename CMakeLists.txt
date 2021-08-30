@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.0)
 project(package-manager LANGUAGES CXX)
 
 # TODO: c++ standard
-#set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 17)
 
 set(SOURCE_FILES
     src/main.cpp

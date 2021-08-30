@@ -132,16 +132,12 @@ class Debug
 	}
 
 #define WRAP_EXCPT(EXCTYPE, CODE) WRAP_EXCPT_MSG(EXCTYPE, CODE, "")
-} // namespace utils
 
-namespace utils
-{
 /**
  * @brief GetBuilderUI
  * @return The GTK.builder object.
  */
 ObjPtr<Gtk::Builder> GetBuilderUI();
-
 /**
  * @brief GetWidgetDerived
  * Initialize a widget from the builder by type.
@@ -159,6 +155,30 @@ TYPE* GetWidgetDerived(const std::string& widgetID)
 		std::string("\nCheck the '") + UI_FILENAME + std::string("' file."));
 	return t;
 }
+
+namespace widget
+{
+/**
+ * @brief EnableWidgets
+ * Enables or disables widgets, found by name.
+ * @param enable Enable widget
+ * @param args Widget names
+ */
+template<typename... Args>
+typename std::enable_if_t<std::conjunction_v<std::is_constructible<std::string, Args>...>,
+                          void>
+EnableWidgets(bool enable, const Args&... args)
+{
+	for(const std::string& name : {args...}) {
+		Gtk::Widget* w = nullptr;
+		GetBuilderUI()->get_widget(name, w);
+
+		if(w) {
+			w->set_sensitive(enable);
+		}
+	}
+}
+} // namespace widget
 } // namespace utils
 
 #endif // UTILS_H
