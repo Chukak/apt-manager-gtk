@@ -24,14 +24,14 @@ int main(int argc, char** argv)
 
 	ObjPtr<Gtk::Application> app(Gtk::Application::create(argc, argv));
 
-	widget::MainWindow* appWin =
-		utils::GetWidgetDerived<widget::MainWindow>("MainWindow");
-	appWin->initUI();
-
 	widget::LogWindow* logView =
 		utils::GetWidgetDerived<widget::LogWindow>("LogTextView");
 	utils::SetErrorLog(logView->log());
 	utils::SetLog(logView->log());
+
+	widget::MainWindow* appWin =
+		utils::GetWidgetDerived<widget::MainWindow>("MainWindow");
+	appWin->initUI();
 
 	widget::Button* btnOpenLog = utils::GetWidgetDerived<widget::Button>("ButtonOpenLog");
 	btnOpenLog->onClicked([logView, btnOpenLog]() {

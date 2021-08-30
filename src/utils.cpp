@@ -24,6 +24,7 @@ bool InitPkgConfiguration()
 			return false;
 		}
 	}
+	confIsInitialized = true;
 	return true;
 }
 

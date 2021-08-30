@@ -68,6 +68,7 @@ Cache::Cache()
 		utils::PrintPkgError();
 		return;
 	}
+	DEBUG() << "Successfully create a package cache: _cacheFile->GetPkgCache() == true";
 
 	_isValid = true;
 }
@@ -81,6 +82,9 @@ Cache::getCandidates(CandidateType type, bool& ok, Progress* pg, pkgAcquireStatu
 	switch(type) {
 	case CandidateType::Installed: {
 		if(pg) pg->setRange(0, _cacheFile->GetPkgCache()->Head().PackageCount);
+
+		DEBUG() << "Generating installed packages (count: "
+				<< _cacheFile->GetPkgCache()->Head().PackageCount << "...";
 
 		for(pkgCache::GrpIterator group = _cacheFile->GetPkgCache()->GrpBegin();
 			group != _cacheFile->GetPkgCache()->GrpEnd();
@@ -99,6 +103,8 @@ Cache::getCandidates(CandidateType type, bool& ok, Progress* pg, pkgAcquireStatu
 		break;
 	}
 	case CandidateType::Upgradable: {
+		DEBUG() << "Updating the package cache...";
+
 		if(pg) {
 			pg->setRange(0, 1);
 			pg->reset();
@@ -149,10 +155,14 @@ Cache::getCandidates(CandidateType type, bool& ok, Progress* pg, pkgAcquireStatu
 			break;
 		}
 
+		DEBUG() << "Successfully updated the package cache.";
 		if(pg) {
 			pg->setRange(0, packetCache->Head().PackageCount);
 			pg->reset();
 		}
+
+		DEBUG() << "Generating upgradable packages (count: "
+				<< _cacheFile->GetPkgCache()->Head().PackageCount << "...";
 
 		for(pkgCache::PkgIterator packet = packetCache->PkgBegin(); !packet.end();
 			++packet) {

@@ -21,6 +21,7 @@ Candidates::Candidates(BaseObjectType* cobject, const ObjPtr<Gtk::Builder>& refB
 	Gtk::TreeView(cobject), _rows(Gtk::ListStore::create(_rowData)), _sortModel(nullptr)
 {
 	(void)refBuilder;
+	DEBUG() << "Widget '" << get_name() << "': was created.";
 
 	set_model(_rows);
 
@@ -115,10 +116,15 @@ Candidates::Candidates(BaseObjectType* cobject, const ObjPtr<Gtk::Builder>& refB
 	widget::Button* btnUpdate =
 		utils::GetWidgetDerived<widget::Button>("ButtonUpdateAction");
 	btnUpdate->signal_clicked().connect(sigc::mem_fun(*this, &Candidates::refreshActual));
+	DEBUG()
+		<< "Widget '" << btnUpdate->get_name()
+		<< "': connected to signal_clicked(), using the slot Candidates::refreshActual.";
 
 	widget::ToggleButton* btnSelectAll =
 		utils::GetWidgetDerived<widget::ToggleButton>("ToggleButtonSelectAllAction");
 	btnSelectAll->signal_clicked().connect(sigc::mem_fun(*this, &Candidates::selectAll));
+	DEBUG() << "Widget '" << btnSelectAll->get_name()
+			<< "': connected to signal_clicked(), using the slot Candidates::selectAll.";
 }
 
 void Candidates::generate(package::CandidateType type, bool force)
@@ -150,6 +156,8 @@ void Candidates::generate(package::CandidateType type, bool force)
 			Gtk::Main::iteration(false);
 		}
 	});
+
+	DEBUG() << "Widget '" << progressBar->get_name() << "': was configured.";
 
 	if(_candidates.find(type) == _candidates.end() || force) {
 		// auto refresh!
@@ -227,11 +235,15 @@ void Candidates::generate(package::CandidateType type, bool force)
 		progressRange.increment();
 	}
 
+	DEBUG() << "Widget '" << get_name() << "': added new rows successfully.";
+
 	_currentType = type;
 } // namespace widget
 
 void Candidates::refreshActual()
 {
+	DEBUG() << "Widget '" << get_name() << "': Candidates::refreshActual was called.";
+
 	generate(static_cast<package::CandidateType>(_currentType), true);
 }
 
@@ -284,6 +296,8 @@ void Candidates::onToggleColumn(const Glib::ustring& path)
 
 void Candidates::selectAll()
 {
+	DEBUG() << "Widget '" << get_name() << "': Candidates::selectAll was called.";
+
 	if(!get_column(0)->get_visible()) return;
 
 	widget::ToggleButton* btnSelectAll =

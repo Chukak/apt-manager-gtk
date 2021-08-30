@@ -12,6 +12,7 @@ Sections::Sections(BaseObjectType* cobject, const ObjPtr<Gtk::Builder>& refBuild
 	Gtk::TreeView(cobject), _rows(Gtk::ListStore::create(_rowData))
 {
 	(void)refBuilder;
+	DEBUG() << "Widget '" << get_name() << "': was created.";
 
 	set_model(_rows);
 
@@ -60,6 +61,9 @@ Sections::Sections(BaseObjectType* cobject, const ObjPtr<Gtk::Builder>& refBuild
 
 	get_selection()->signal_changed().connect(
 		sigc::mem_fun(*this, &Sections::onRowSelected));
+	DEBUG()
+		<< "Widget '" << get_name()
+		<< "': connected to signal_changed(), using the slot Sections::onRowSelected.";
 } // namespace widget
 
 void Sections::onRowSelected()
@@ -67,6 +71,8 @@ void Sections::onRowSelected()
 	Gtk::TreeModel::iterator iter = get_selection()->get_selected();
 	if(iter) {
 		int32_t type = (*iter)[_rowData.PackageType];
+		DEBUG() << "Widget '" << get_name() << "': '" << (*iter)[_rowData.Title]
+				<< "' was selected.";
 
 		widget::Candidates* cand =
 			utils::GetWidgetDerived<widget::Candidates>("CandidatesTree");
