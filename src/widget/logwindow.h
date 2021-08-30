@@ -21,6 +21,7 @@ class LogWindow : public Gtk::TextView
 
   private:
     std::ostringstream _log;
+    sigc::connection _timer;
 };
 } // namespace widget
 

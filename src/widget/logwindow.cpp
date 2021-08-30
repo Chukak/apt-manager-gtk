@@ -1,5 +1,6 @@
 #include "logwindow.h"
 #include <gtkmm/window.h>
+#include <glibmm/main.h>
 
 namespace widget
 {
@@ -11,9 +12,12 @@ LogWindow::LogWindow(BaseObjectType* cobject, const ObjPtr<Gtk::Builder>& refBui
 	set_editable(false);
 	set_wrap_mode(Gtk::WRAP_NONE);
 
-	Gtk::Window* t = nullptr;
-	utils::GetBuilderUI()->get_widget("LogWindow", t);
-	t->signal_show().connect([this]() { get_buffer()->set_text(_log.str()); });
+	_timer = Glib::signal_timeout().connect(
+		[this]() -> bool {
+			this->get_buffer()->set_text(this->log()->str());
+			return true;
+		},
+		1000 /* ms */);
 }
 
 std::ostringstream* LogWindow::log()
