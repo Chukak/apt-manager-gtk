@@ -15,7 +15,8 @@ LogWindow::LogWindow(BaseObjectType* cobject, const ObjPtr<Gtk::Builder>& refBui
 
 	_timer = Glib::signal_timeout().connect(
 		[this]() -> bool {
-			this->get_buffer()->set_text(this->log()->str());
+			this->get_buffer()->insert(this->get_buffer()->end(), this->log()->str());
+			this->log()->str("");
 			return true;
 		},
 		1000 /* ms */);

@@ -19,6 +19,7 @@ Sections::Sections(BaseObjectType* cobject, const ObjPtr<Gtk::Builder>& refBuild
 	{
 		Gtk::CellRendererText* render = Gtk::manage(new Gtk::CellRendererText);
 		render->set_fixed_size(-1, 48);
+		render->set_alignment(0.5, 0.5);
 
 		Gtk::TreeViewColumn* col =
 			Gtk::manage(new Gtk::TreeViewColumn("PACKAGES", *render));
@@ -26,7 +27,6 @@ Sections::Sections(BaseObjectType* cobject, const ObjPtr<Gtk::Builder>& refBuild
 		col->add_attribute(render->property_text(), _rowData.Title);
 		col->add_attribute(render->property_foreground_rgba(), _rowData.ForegroundColor);
 		col->add_attribute(render->property_font_desc(), _rowData.Font);
-		col->set_alignment(0.5);
 
 		append_column(*col);
 	}
@@ -36,11 +36,11 @@ Sections::Sections(BaseObjectType* cobject, const ObjPtr<Gtk::Builder>& refBuild
 
 		switch(t) {
 		case package::Installed: {
-			row[_rowData.Title] = "Show installed";
+			row[_rowData.Title] = "INSTALLED";
 			break;
 		}
 		case package::Upgradable: {
-			row[_rowData.Title] = "Suggested for updating";
+			row[_rowData.Title] = "UPGRADABLE";
 			break;
 		}
 		}
