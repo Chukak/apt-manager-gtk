@@ -91,6 +91,25 @@ pkgSystem& GetPkgSystem()
 	return *_system;
 }
 
+static bool LogIncludeLine = true, LogIncludeFunc = true, LogIncludeFile = true;
+
+void SetLogFlags(int flags)
+{
+	LogIncludeFile = LogIncludeLine = LogIncludeFunc = false;
+
+	if(flags & LogLine) {
+		LogIncludeLine = true;
+	}
+
+	if(flags & LogFunc) {
+		LogIncludeFunc = true;
+	}
+
+	if(flags & LogFile) {
+		LogIncludeFile = true;
+	}
+}
+
 namespace debug
 {
 #if __cplusplus > 201703L
@@ -102,8 +121,9 @@ Debug::Debug(std::source_location loc)
 #else
 Debug::Debug(int line, std::string file, std::string funcname)
 {
-	_buf << GetNowStr() << ": " << file << " -> [" << funcname << "]"
-		 << ":" << line << ": ";
+	_buf << GetNowStr() << ": " << (LogIncludeFile ? file : "")
+		 << (LogIncludeFunc ? " -> [" + funcname + "]" : "")
+		 << (LogIncludeLine ? ":" + std::to_string(line) : "") << ": ";
 }
 #endif
 

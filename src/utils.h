@@ -68,6 +68,24 @@ std::string GetNowStr(std::string format = "", bool addMs = false);
  */
 pkgSystem& GetPkgSystem();
 
+/**
+ * @brief The LogFlag enum
+ */
+enum LogFlag : int
+{
+	LogLine = 1 << 0, //! a line
+	LogFunc = 1 << 1, //! a function or method
+	LogFile = 1 << 2, //! a file
+	LogDefault = LogLine | LogFile | LogFunc
+};
+
+/**
+ * @brief SetLogFlags
+ * Sets flags to log object. See: the LogFlag enum.
+ * @param flags Log flags.
+ */
+void SetLogFlags(int flags);
+
 namespace debug
 {
 #if defined(NDEBUG) // release build

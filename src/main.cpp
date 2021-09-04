@@ -15,6 +15,8 @@
 
 int main(int argc, char** argv)
 {
+	utils::SetLogFlags(utils::LogFile | utils::LogLine);
+
 	// load resources
 	WRAP_EXCPT(std::exception, {
 		ObjPtr<Gio::Resource> resource_bundle =
