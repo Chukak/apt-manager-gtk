@@ -193,6 +193,12 @@ void Candidates::generate(package::CandidateType type, bool force)
 			dialog.set_title("Warning!");
 			dialog.run();
 
+			utils::widget::EnableWidgets(true,
+										 "ButtonUpdateAction",
+										 "ButtonInstallAction",
+										 "ToggleButtonSelectAllAction",
+										 "ButtonOpenLog",
+										 "SectionsTree");
 			return;
 		}
 	}
