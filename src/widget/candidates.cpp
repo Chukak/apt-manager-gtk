@@ -125,6 +125,14 @@ Candidates::Candidates(BaseObjectType* cobject, const ObjPtr<Gtk::Builder>& refB
 	btnSelectAll->signal_clicked().connect(sigc::mem_fun(*this, &Candidates::selectAll));
 	DEBUG() << "Widget '" << btnSelectAll->get_name()
 			<< "': connected to signal_clicked(), using the slot Candidates::selectAll.";
+
+	widget::Button* btnInstall =
+		utils::GetWidgetDerived<widget::Button>("ButtonInstallAction");
+	btnInstall->signal_clicked().connect(
+		sigc::mem_fun(*this, &Candidates::installSelected));
+	DEBUG() << "Widget '" << btnInstall->get_name()
+			<< "': connected to signal_clicked(), using the slot "
+			   "Candidates::installSelected.";
 }
 
 void Candidates::generate(package::CandidateType type, bool force)
@@ -159,12 +167,7 @@ void Candidates::generate(package::CandidateType type, bool force)
 
 	DEBUG() << "Widget '" << progressBar->get_name() << "': was configured.";
 
-	utils::widget::EnableWidgets(false,
-								 "ButtonUpdateAction",
-								 "ButtonInstallAction",
-								 "ToggleButtonSelectAllAction",
-								 "ButtonOpenLog",
-								 "SectionsTree");
+	waitForProgress(true);
 
 	if(_candidates.find(type) == _candidates.end() || force) {
 		// auto refresh!
@@ -175,12 +178,7 @@ void Candidates::generate(package::CandidateType type, bool force)
 			dialog.set_title("Warning!");
 			dialog.run();
 
-			utils::widget::EnableWidgets(true,
-										 "ButtonUpdateAction",
-										 "ButtonInstallAction",
-										 "ToggleButtonSelectAllAction",
-										 "ButtonOpenLog",
-										 "SectionsTree");
+			waitForProgress(false);
 			return;
 		}
 
@@ -193,12 +191,7 @@ void Candidates::generate(package::CandidateType type, bool force)
 			dialog.set_title("Warning!");
 			dialog.run();
 
-			utils::widget::EnableWidgets(true,
-										 "ButtonUpdateAction",
-										 "ButtonInstallAction",
-										 "ToggleButtonSelectAllAction",
-										 "ButtonOpenLog",
-										 "SectionsTree");
+			waitForProgress(false);
 			return;
 		}
 	}
@@ -254,12 +247,7 @@ void Candidates::generate(package::CandidateType type, bool force)
 		progressRange.increment();
 	}
 
-	utils::widget::EnableWidgets(true,
-								 "ButtonUpdateAction",
-								 "ButtonInstallAction",
-								 "ToggleButtonSelectAllAction",
-								 "ButtonOpenLog",
-								 "SectionsTree");
+	waitForProgress(false);
 
 	DEBUG() << "Widget '" << get_name() << "': added new rows successfully.";
 
@@ -335,6 +323,94 @@ void Candidates::selectAll()
 		else
 			row[_rowData.Checked] = false;
 	}
+}
+
+void Candidates::installSelected()
+{
+	DEBUG() << "Widget '" << get_name() << "': Candidates::installSelected was called.";
+
+	if(_currentType != package::Upgradable) return;
+
+	decltype(_candidates)::const_iterator iterAllCandidates =
+		_candidates.find(static_cast<package::CandidateType>(_currentType));
+	if(iterAllCandidates == _candidates.end()) {
+		// TODO: error
+		return;
+	}
+
+	const package::CandidateList& allCandidates = iterAllCandidates->second;
+
+	waitForProgress(true);
+
+	package::CandidateList listSelected;
+	for(const Gtk::TreeModel::Row& row : _rows->children()) {
+		if(!row[_rowData.Checked]) continue;
+
+		package::CandidateList::const_iterator iterFoundCandidate =
+			std::find_if(allCandidates.cbegin(),
+						 allCandidates.cend(),
+						 [this, row](const package::Candidate& candidate) {
+							 return (row[_rowData.Name] == candidate.FullName) &&
+									(row[_rowData.Version] == candidate.Version) &&
+									(row[_rowData.Architecture] ==
+									 candidate.Architecture) &&
+									(row[_rowData.Origin] == candidate.Origin) &&
+									(row[_rowData.Number] == candidate.Number) &&
+									(row[_rowData.Size] == candidate.SizeKB);
+						 });
+		if(iterFoundCandidate != allCandidates.cend()) {
+			listSelected.push_back(*iterFoundCandidate);
+		}
+	}
+
+	extension::ProgressRange progressRange;
+	widget::ProgressBar* progressBar =
+		utils::GetWidgetDerived<widget::ProgressBar>("MainProgressBar");
+	progressBar->set_fraction(0.0);
+
+	progressRange.signal_rangeChanged().connect(
+		sigc::mem_fun(*progressBar, &ProgressBar::setRange));
+	progressRange.signal_changed().connect([progressBar](double, double step) {
+		progressBar->step(step);
+		// next event
+		if(Gtk::Main::events_pending()) {
+			Gtk::Main::iteration(false);
+		}
+	});
+	progressRange.signal_reseted().connect(
+		[progressBar]() { progressBar->set_fraction(0.0); });
+
+	DEBUG() << "Widget '" << progressBar->get_name() << "': was configured.";
+
+	package::Cache cache;
+	if(!cache.IsValid()) {
+		Gtk::MessageDialog dialog("The package cache is invalid.");
+		dialog.set_title("Warning!");
+		dialog.run();
+
+		waitForProgress(false);
+		return;
+	}
+
+	if(!cache.installCandidates(listSelected, &progressRange)) {
+		Gtk::MessageDialog dialog("Errors occurred when installing packages.");
+		dialog.set_title("Error!");
+		dialog.run();
+	}
+
+	waitForProgress(false);
+
+	generate(static_cast<package::CandidateType>(_currentType), true);
+}
+
+void Candidates::waitForProgress(bool on)
+{
+	utils::widget::EnableWidgets(!on,
+								 "ButtonUpdateAction",
+								 "ButtonInstallAction",
+								 "ToggleButtonSelectAllAction",
+								 "ButtonOpenLog",
+								 "SectionsTree");
 }
 
 Candidates::RowType::RowType()

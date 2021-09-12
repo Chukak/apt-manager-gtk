@@ -110,6 +110,47 @@ void SetLogFlags(int flags)
 	}
 }
 
+void RedirectLogOutputToTemporaryFile(bool enable)
+{
+	static int _stdfd = -1, _cachedStdout = -1, _cachedStderr = -1;
+	char _name[] = "/tmp/stdfd_" EXECUTABLE_PROJECT_NAME ".XXXXXX";
+
+	if(enable) {
+		_cachedStdout = dup(STDOUT_FILENO);
+		_cachedStderr = dup(STDERR_FILENO);
+
+		fflush(stdout);
+		fflush(stderr);
+
+		_stdfd = mkstemp(_name);
+		unlink(_name);
+
+		dup2(_stdfd, STDOUT_FILENO);
+		dup2(_stdfd, STDERR_FILENO);
+	} else {
+		fflush(stdout);
+		fflush(stderr);
+
+		dup2(_cachedStdout, STDOUT_FILENO);
+		dup2(_cachedStderr, STDERR_FILENO);
+
+		{
+			lseek(_stdfd, 0, SEEK_SET);
+
+			char buf[65535];
+			if(read(_stdfd, buf, 65535) == -1) {
+				*ErrorLogOutput << std::strerror(errno);
+			} else {
+				*LogOutput << buf;
+			}
+		}
+
+		close(_stdfd);
+
+		_stdfd = -1;
+	}
+}
+
 namespace debug
 {
 #if __cplusplus > 201703L

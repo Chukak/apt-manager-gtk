@@ -85,6 +85,12 @@ enum LogFlag : int
  * @param flags Log flags.
  */
 void SetLogFlags(int flags);
+/**
+ * @brief RedirectLogOutputToTemporaryFile
+ * Redirects stdout and stderr to the temporarily file.
+ * @param enable Redirecting enable
+ */
+void RedirectLogOutputToTemporaryFile(bool enable);
 
 namespace debug
 {

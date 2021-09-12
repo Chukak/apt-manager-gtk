@@ -184,19 +184,25 @@ Cache::getCandidates(CandidateType type, bool& ok, Progress* pg, pkgAcquireStatu
 	return result;
 }
 
-bool Cache::installCandidates(const CandidateList& list)
+bool Cache::installCandidates(const CandidateList& list, Progress* pg)
 {
+	if(pg) pg->setRange(0, 7);
+
 	if(!RunScripts("APT::Install::Pre-Invoke")) {
 		DEBUG() << "RunScripts(\"APT::Install::Pre-Invoke\") == false";
 		utils::PrintPkgError();
 		return false;
 	}
 
+	if(pg) pg->increment();
+
 	if(!_cacheFile->Open(nullptr, false)) {
 		DEBUG() << "_cacheFile->Open(...) == false";
 		utils::PrintPkgError();
 		return false;
 	}
+
+	if(pg) pg->increment();
 
 	pkgDepCache* depCache = _cacheFile->GetDepCache();
 
@@ -205,6 +211,8 @@ bool Cache::installCandidates(const CandidateList& list)
 		utils::PrintPkgError();
 		return false;
 	}
+
+	if(pg) pg->increment();
 
 	pkgPolicy* policy = _cacheFile->GetPolicy();
 
@@ -227,11 +235,15 @@ bool Cache::installCandidates(const CandidateList& list)
 	}
 	DEBUG() << markInstalled << " packages are marked as installed.";
 
+	if(pg) pg->increment();
+
 	if(!_cacheFile->BuildSourceList()) {
 		DEBUG() << "_cacheFile->BuildSourceList() == false";
 		utils::PrintPkgError();
 		return false;
 	}
+
+	if(pg) pg->increment();
 
 	std::unique_ptr<pkgPackageManager> manager(utils::GetPkgSystem().CreatePM(depCache));
 	pkgSourceList* const sourceList = _cacheFile->GetSourceList();
@@ -244,6 +256,8 @@ bool Cache::installCandidates(const CandidateList& list)
 		return false;
 	}
 
+	if(pg) pg->increment();
+
 	bool acquireRunSuccess(true);
 	{
 		switch(managerAcq.Run()) {
@@ -253,6 +267,13 @@ bool Cache::installCandidates(const CandidateList& list)
 		default:
 			break;
 		}
+		}
+
+		if(pg) {
+			pg->increment();
+			pg->setRange(0,
+						 static_cast<int>(managerAcq.ItemsEnd() -
+										  managerAcq.ItemsBegin()));
 		}
 
 		for(pkgAcquire::ItemIterator iter = managerAcq.ItemsBegin();
@@ -287,15 +308,27 @@ bool Cache::installCandidates(const CandidateList& list)
 	APT::Progress::PackageManager* managerProgress =
 		APT::Progress::PackageManagerProgressFactory();
 
+	if(pg) pg->setRange(0, static_cast<int>(markInstalled));
+
+	DEBUG() << "Redirecting stdout and stderr to temporarily file.\n";
+	utils::RedirectLogOutputToTemporaryFile(true);
+
 	switch(manager->DoInstall(managerProgress)) {
 	case pkgPackageManager::Completed: {
-		break;
 	case pkgPackageManager::Incomplete:
 	case pkgPackageManager::Failed:
-		utils::PrintPkgError();
+		if(_error->PendingError()) {
+			utils::PrintPkgError();
+		}
+
+		if(pg) pg->increment();
+
 		break;
 	}
 	}
+
+	utils::RedirectLogOutputToTemporaryFile(false);
+	utils::GetLog() << "\n";
 
 	managerAcq.Shutdown();
 	if(!manager->GetArchives(&managerAcq, sourceList, &records)) {

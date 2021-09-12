@@ -83,7 +83,7 @@ class Cache
      * @param type Type of candidates
      * @param ok Result of all function operation
      * @param progress The pointer to the Progress object.
-     * @param status The status of getting candidated.
+     * @param status The status of getting candidate.
      * @return A list of candidates.
      */
     CandidateList getCandidates(CandidateType type,
@@ -94,9 +94,10 @@ class Cache
      * @brief installCandidates
      * Installs candidates from the passed list.
      * @param list List of candidates
+     * @param progress The pointer to the Progress object.
      * @return Result of installation.
      */
-    bool installCandidates(const CandidateList& list);
+    bool installCandidates(const CandidateList& list, Progress* progress = nullptr);
 
   private:
     /**

@@ -25,6 +25,8 @@ class Candidates : public Gtk::TreeView
     void refreshActual();
     void onToggleColumn(const Glib::ustring& path);
     void selectAll();
+    void installSelected();
+    void waitForProgress(bool on);
 
   private:
     class RowType : public Gtk::TreeModel::ColumnRecord
