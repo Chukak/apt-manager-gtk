@@ -15,8 +15,11 @@
 
 int main(int argc, char** argv)
 {
-	utils::SetLogFlags(utils::LogFile | utils::LogLine);
-
+#ifdef NDEBUG
+	utils::SetLogFlags(utils::LogFile);
+#else
+	utils::SetLogFlags(utils::LogFile | utils::LogLine | utils::LogVerbose);
+#endif
 	// load resources
 	WRAP_EXCPT(std::exception, {
 		ObjPtr<Gio::Resource> resource_bundle =

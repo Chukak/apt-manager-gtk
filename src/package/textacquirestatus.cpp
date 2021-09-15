@@ -20,8 +20,6 @@ void TextAcquireStatus::Start()
 void TextAcquireStatus::Stop()
 {
 	pkgAcquireStatus::Stop();
-
-	// TODO: можно собрать статистику
 }
 
 void TextAcquireStatus::IMSHit(pkgAcquire::ItemDesc &item)
@@ -60,24 +58,23 @@ void TextAcquireStatus::Fail(pkgAcquire::ItemDesc &item)
 		break;
 	}
 	}
-	_outStream << std::endl;
 
 	if(!item.Owner->ErrorText.empty()) {
 		std::stringstream errorText;
 
 		errorText << item.Owner->ErrorText;
-		// TODO: форматирование
-
 		_errors.push_back(errorText.str());
+
+		_outStream << item.Owner->ErrorText;
 	}
 
+	_outStream << std::endl;
 	_isAllUpd = false;
 }
 
 bool TextAcquireStatus::Pulse(pkgAcquire *owner)
 {
 	(void)owner;
-	// TODO: здесь можно испускать сигнал об изменениях загрузки итема
 	return true;
 }
 
@@ -85,7 +82,6 @@ bool TextAcquireStatus::MediaChange(std::string media, std::string drive)
 {
 	(void)media;
 	(void)drive;
-	// TODO: смена дисков, сделать если необходимо
 	return true;
 }
 

@@ -9,7 +9,9 @@
 
 #include <gtkmm/builder.h>
 
-#if __cplusplus > 201703L
+#define _GNUC_VER(major, minor) __GNUC__ >= major&& __GNUC_MINOR__ >= minor
+
+#if __cplusplus > 201703L && _GNUC_VER(11, 1)
 #include <source_location>
 #else
 #include <cstring>
@@ -76,7 +78,8 @@ enum LogFlag : int
 	LogLine = 1 << 0, //! a line
 	LogFunc = 1 << 1, //! a function or method
 	LogFile = 1 << 2, //! a file
-	LogDefault = LogLine | LogFile | LogFunc
+	LogVerbose = 1 << 3,
+	LogDefault = LogLine | LogFile | LogFunc | LogVerbose
 };
 
 /**
@@ -94,28 +97,18 @@ void RedirectLogOutputToTemporaryFile(bool enable);
 
 namespace debug
 {
-#if defined(NDEBUG) // release build
-class DebugNull
-{
-	template<typename T>
-	DebugNull& operator<<(const T& val)
-	{
-		(void)val;
-		return *this;
-	}
-};
-#define DEBUG()
-#else // debug build
-
 class Debug
 {
   public:
-#if __cplusplus > 201703L
-    explicit Debug(std::source_location loc = std::source_location::current());
+#if __cplusplus > 201703L && _GNUC_VER(11, 1)
+    explicit Debug(std::source_location loc, bool verbose = false);
 #else
-    explicit Debug(int line = -1, std::string file = "", std::string funcname = "");
+	explicit Debug(int line = -1,
+				   std::string file = "",
+				   std::string funcname = "",
+				   bool verbose = false);
 #endif
-    ~Debug();
+	~Debug();
 
 	template<typename T>
 	Debug& operator<<(const T& val)
@@ -126,6 +119,7 @@ class Debug
 
   private:
     std::ostringstream _buf;
+    bool _verbose;
 };
 
 // gcc, clang, msvc
@@ -135,16 +129,22 @@ class Debug
 #define __CURRENT_FUNCTION_NAME__ "unknown"
 #endif
 
-#if __cplusplus > 201703L
-#define DEBUG() (debug::Debug())
+#if __cplusplus > 201703L && _GNUC_VER(11, 1)
+#define DEBUG() (utils::debug::Debug(std::source_location::current(), true))
+#define INFO() (utils::debug::Debug(std::source_location::current()))
 #else
 #define DEBUG()                                                                          \
 	(utils::debug::Debug(__LINE__,                                                       \
 						 std::strrchr(__FILE__, '/') ? std::strrchr(__FILE__, '/') + 1   \
 													 : __FILE__,                         \
+						 __CURRENT_FUNCTION_NAME__,                                      \
+						 true))
+#define INFO()                                                                           \
+	(utils::debug::Debug(__LINE__,                                                       \
+						 std::strrchr(__FILE__, '/') ? std::strrchr(__FILE__, '/') + 1   \
+													 : __FILE__,                         \
 						 __CURRENT_FUNCTION_NAME__))
-#endif
-#endif
+#endif // __cplusplus
 } // namespace debug
 
 #define WRAP_EXCPT_MSG(EXCTYPE, CODE, MSG)                                               \

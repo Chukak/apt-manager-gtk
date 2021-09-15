@@ -32,8 +32,7 @@ Candidates::Candidates(BaseObjectType* cobject, const ObjPtr<Gtk::Builder>& refB
 		render->signal_toggled().connect(
 			sigc::mem_fun(*this, &Candidates::onToggleColumn));
 
-		Gtk::TreeViewColumn* col =
-			Gtk::manage(new Gtk::TreeViewColumn("CHECKED", *render));
+		Gtk::TreeViewColumn* col = Gtk::manage(new Gtk::TreeViewColumn("", *render));
 		setColumnRender(col, render);
 
 		append_column(*col);
@@ -334,7 +333,7 @@ void Candidates::installSelected()
 	decltype(_candidates)::const_iterator iterAllCandidates =
 		_candidates.find(static_cast<package::CandidateType>(_currentType));
 	if(iterAllCandidates == _candidates.end()) {
-		// TODO: error
+		INFO() << "iterAllCandidates == _candidates.end(): no candidates";
 		return;
 	}
 

@@ -64,7 +64,7 @@ Cache::Cache()
 	_cacheFile.reset(new pkgCacheFile);
 
 	if(!_cacheFile->GetPkgCache()) {
-		DEBUG() << "_cacheFile->GetPkgCache() == false";
+		INFO() << "_cacheFile->GetPkgCache() == false";
 		utils::PrintPkgError();
 		return;
 	}
@@ -111,7 +111,7 @@ Cache::getCandidates(CandidateType type, bool& ok, Progress* pg, pkgAcquireStatu
 		}
 
 		if(!_cacheFile->BuildSourceList()) {
-			DEBUG() << "_cacheFile->BuildSourceList() == false";
+			INFO() << "_cacheFile->BuildSourceList() == false";
 			utils::PrintPkgError();
 			ok = false;
 			break;
@@ -121,7 +121,7 @@ Cache::getCandidates(CandidateType type, bool& ok, Progress* pg, pkgAcquireStatu
 
 		pkgSourceList* sourceListPkgs = _cacheFile->GetSourceList();
 		if(!sourceListPkgs) {
-			DEBUG() << "_cacheFile->GetSourceList() == NULL;";
+			INFO() << "_cacheFile->GetSourceList() == NULL;";
 			ok = false;
 			break;
 		}
@@ -141,8 +141,8 @@ Cache::getCandidates(CandidateType type, bool& ok, Progress* pg, pkgAcquireStatu
 		_cacheFile->RemoveCaches();
 		if(!_cacheFile->BuildCaches(nullptr, false) &&
 		   !_cacheFile->Open(nullptr, false)) {
-			DEBUG() << "_cacheFile->BuildCaches(...) == false; _cacheFile->Open(...) == "
-					   "false";
+			INFO() << "_cacheFile->BuildCaches(...) == false; _cacheFile->Open(...) == "
+					  "false";
 			utils::PrintPkgError();
 			ok = false;
 			break;
@@ -150,7 +150,7 @@ Cache::getCandidates(CandidateType type, bool& ok, Progress* pg, pkgAcquireStatu
 
 		pkgDepCache* packetCache = _cacheFile->GetDepCache();
 		if(!packetCache) {
-			DEBUG() << "_cacheFile->GetDepCache() == NULL;";
+			INFO() << "_cacheFile->GetDepCache() == NULL;";
 			ok = false;
 			break;
 		}
@@ -189,7 +189,7 @@ bool Cache::installCandidates(const CandidateList& list, Progress* pg)
 	if(pg) pg->setRange(0, 7);
 
 	if(!RunScripts("APT::Install::Pre-Invoke")) {
-		DEBUG() << "RunScripts(\"APT::Install::Pre-Invoke\") == false";
+		INFO() << "RunScripts(\"APT::Install::Pre-Invoke\") == false";
 		utils::PrintPkgError();
 		return false;
 	}
@@ -197,7 +197,7 @@ bool Cache::installCandidates(const CandidateList& list, Progress* pg)
 	if(pg) pg->increment();
 
 	if(!_cacheFile->Open(nullptr, false)) {
-		DEBUG() << "_cacheFile->Open(...) == false";
+		INFO() << "_cacheFile->Open(...) == false";
 		utils::PrintPkgError();
 		return false;
 	}
@@ -207,7 +207,7 @@ bool Cache::installCandidates(const CandidateList& list, Progress* pg)
 	pkgDepCache* depCache = _cacheFile->GetDepCache();
 
 	if(depCache->DelCount() != 0 || depCache->InstCount() != 0) {
-		DEBUG() << "depCache->DelCount() == 0; depCache->InstCount() == 0";
+		INFO() << "depCache->DelCount() == 0; depCache->InstCount() == 0";
 		utils::PrintPkgError();
 		return false;
 	}
@@ -227,7 +227,7 @@ bool Cache::installCandidates(const CandidateList& list, Progress* pg)
 
 		if(found != list.cend()) {
 			if(!depCache->MarkInstall(pkg, true, 0, false, true)) {
-				DEBUG() << "depCache->MarkInstall(...) == false";
+				INFO() << "depCache->MarkInstall(...) == false";
 				utils::PrintPkgError();
 			} else
 				++markInstalled;
@@ -238,7 +238,7 @@ bool Cache::installCandidates(const CandidateList& list, Progress* pg)
 	if(pg) pg->increment();
 
 	if(!_cacheFile->BuildSourceList()) {
-		DEBUG() << "_cacheFile->BuildSourceList() == false";
+		INFO() << "_cacheFile->BuildSourceList() == false";
 		utils::PrintPkgError();
 		return false;
 	}
@@ -251,7 +251,7 @@ bool Cache::installCandidates(const CandidateList& list, Progress* pg)
 	pkgAcquire managerAcq;
 
 	if(!manager->GetArchives(&managerAcq, sourceList, &records)) {
-		DEBUG() << "manager->GetArchives(...) == false";
+		INFO() << "manager->GetArchives(...) == false";
 		utils::PrintPkgError();
 		return false;
 	}
@@ -332,7 +332,7 @@ bool Cache::installCandidates(const CandidateList& list, Progress* pg)
 
 	managerAcq.Shutdown();
 	if(!manager->GetArchives(&managerAcq, sourceList, &records)) {
-		DEBUG() << "manager->GetArchives(...) == false";
+		INFO() << "manager->GetArchives(...) == false";
 		utils::PrintPkgError();
 		return false;
 	}
@@ -340,7 +340,7 @@ bool Cache::installCandidates(const CandidateList& list, Progress* pg)
 	delete managerProgress;
 
 	if(!RunScripts("APT::Install::Post-Invoke-Success")) {
-		DEBUG() << "RunScripts(\"APT::Install::Post-Invoke-Success\") == false";
+		INFO() << "RunScripts(\"APT::Install::Post-Invoke-Success\") == false";
 		utils::PrintPkgError();
 		return false;
 	}

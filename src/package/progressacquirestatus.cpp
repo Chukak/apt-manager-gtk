@@ -50,13 +50,10 @@ void ProgressAcquireStatus::Fail(pkgAcquire::ItemDesc &item)
 		break;
 	}
 	default: {
-		std::stringstream errorText;
-		errorText << "Error: (" << item.Owner->ID << "): " << item.Description << "\n";
-
 		if(!item.Owner->ErrorText.empty()) {
-			errorText << item.Owner->ErrorText;
-			// TODO: форматирование
-
+			std::stringstream errorText;
+			errorText << "Error: (" << item.Owner->ID << "): " << item.Owner->ErrorText
+					  << "\n";
 			_errors.push_back(errorText.str());
 		}
 		break;
@@ -67,7 +64,6 @@ void ProgressAcquireStatus::Fail(pkgAcquire::ItemDesc &item)
 bool ProgressAcquireStatus::Pulse(pkgAcquire *owner)
 {
 	(void)owner;
-	// TODO: здесь можно испускать сигнал об изменениях загрузки итема
 	return true;
 }
 
@@ -75,7 +71,6 @@ bool ProgressAcquireStatus::MediaChange(std::string media, std::string drive)
 {
 	(void)media;
 	(void)drive;
-	// TODO: смена дисков, сделать если необходимо
 	return true;
 }
 

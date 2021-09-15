@@ -91,11 +91,12 @@ pkgSystem& GetPkgSystem()
 	return *_system;
 }
 
-static bool LogIncludeLine = true, LogIncludeFunc = true, LogIncludeFile = true;
+static bool LogIncludeLine = true, LogIncludeFunc = true, LogIncludeFile = true,
+			LogVerboseOutput = true;
 
 void SetLogFlags(int flags)
 {
-	LogIncludeFile = LogIncludeLine = LogIncludeFunc = false;
+	LogIncludeFile = LogIncludeLine = LogIncludeFunc = LogVerboseOutput = false;
 
 	if(flags & LogLine) {
 		LogIncludeLine = true;
@@ -107,6 +108,10 @@ void SetLogFlags(int flags)
 
 	if(flags & LogFile) {
 		LogIncludeFile = true;
+	}
+
+	if(flags & LogVerbose) {
+		LogVerboseOutput = true;
 	}
 }
 
@@ -153,15 +158,20 @@ void RedirectLogOutputToTemporaryFile(bool enable)
 
 namespace debug
 {
-#if __cplusplus > 201703L
-Debug::Debug(std::source_location loc)
+#if __cplusplus > 201703L && _GNUC_VER(11, 1)
+Debug::Debug(std::source_location loc, bool verbose) : _verbose(verbose)
 {
+	if(_verbose && !LogVerboseOutput) return;
+
 	_buf << GetNowStr() << ":" << file << " -> " << loc.function_name() << ":"
 		 << loc.line() << ": ";
 }
 #else
-Debug::Debug(int line, std::string file, std::string funcname)
+Debug::Debug(int line, std::string file, std::string funcname, bool verbose) :
+	_verbose(verbose)
 {
+	if(_verbose && !LogVerboseOutput) return;
+
 	_buf << GetNowStr() << ": " << (LogIncludeFile ? file : "")
 		 << (LogIncludeFunc ? " -> [" + funcname + "]" : "")
 		 << (LogIncludeLine ? ":" + std::to_string(line) : "") << ": ";
@@ -170,6 +180,8 @@ Debug::Debug(int line, std::string file, std::string funcname)
 
 Debug::~Debug()
 {
+	if(_verbose && !LogVerboseOutput) return;
+
 	*LogOutput << _buf.str() << std::endl;
 }
 } // namespace debug
