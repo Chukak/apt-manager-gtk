@@ -1,0 +1,13 @@
+Source: apt-manager-gtk
+Priority: optional
+Maintainer: Package Maintainer <chukak12@gmail.com>
+Build-Depends: debhelper(>= 12.1.1), cmake, libgtkmm-3.0-dev, libstdc++-8-dev, libpthread-stubs0-dev,
+  libapt-pkg-dev
+Standards-Version: 4.3.0
+Section: bin
+
+Package: apt-manager-gtk
+Section: bin
+Architecture: linux-any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: GUI for the 'apt-get update' command.

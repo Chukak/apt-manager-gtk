@@ -1,0 +1,5 @@
+apt-manager-gtk (1.0.0) 20.04; urgency=medium
+
+  * Release 1.0.0. (Closes: #XXXXXX)
+
+ -- Maintainer: Sergey Fedorov <chukak12@gmail.com>  Wed, 15 Sep 2021 12:59:27 +0300
