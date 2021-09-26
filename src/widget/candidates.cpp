@@ -3,6 +3,7 @@
 #include "../utils.h"
 #include "button.h"
 #include "progressbar.h"
+#include "menu.h"
 #include "../extension/progressrange.h"
 #include "../extension/progresspulse.h"
 
@@ -112,26 +113,28 @@ Candidates::Candidates(BaseObjectType* cobject, const ObjPtr<Gtk::Builder>& refB
 		col->set_resizable(false);
 	}
 
-	widget::Button* btnUpdate =
-		utils::GetWidgetDerived<widget::Button>("ButtonUpdateAction");
+	widget::Button* btnUpdate = utils::GetWidgetDerived<widget::Button>("ButtonUpdate");
 	btnUpdate->signal_clicked().connect(sigc::mem_fun(*this, &Candidates::refreshActual));
 	DEBUG()
 		<< "Widget '" << btnUpdate->get_name()
 		<< "': connected to signal_clicked(), using the slot Candidates::refreshActual.";
 
-	widget::ToggleButton* btnSelectAll =
-		utils::GetWidgetDerived<widget::ToggleButton>("ToggleButtonSelectAllAction");
-	btnSelectAll->signal_clicked().connect(sigc::mem_fun(*this, &Candidates::selectAll));
-	DEBUG() << "Widget '" << btnSelectAll->get_name()
-			<< "': connected to signal_clicked(), using the slot Candidates::selectAll.";
+	widget::Menu* menu = utils::GetCustomWidget<widget::Menu>("MainMenu");
+	if(Gtk::CheckMenuItem* item =
+		   menu->getItem<Gtk::CheckMenuItem>("MenuSelectAllAction")) {
+		item->signal_toggled().connect(sigc::mem_fun(*this, &Candidates::selectAll));
+		DEBUG() << "Widget '" << item->get_name()
+				<< "': connected to signal_clicked(), using the slot "
+				   "Candidates::selectAll.";
+	}
 
-	widget::Button* btnInstall =
-		utils::GetWidgetDerived<widget::Button>("ButtonInstallAction");
-	btnInstall->signal_clicked().connect(
-		sigc::mem_fun(*this, &Candidates::installSelected));
-	DEBUG() << "Widget '" << btnInstall->get_name()
-			<< "': connected to signal_clicked(), using the slot "
-			   "Candidates::installSelected.";
+	if(Gtk::MenuItem* item = menu->getItem<Gtk::MenuItem>("MenuInstallAction")) {
+		item->signal_activate().connect(
+			sigc::mem_fun(*this, &Candidates::installSelected));
+		DEBUG() << "Widget '" << item->get_name()
+				<< "': connected to signal_clicked(), using the slot "
+				   "Candidates::installSelected.";
+	}
 }
 
 void Candidates::generate(package::CandidateType type, bool force)
@@ -197,9 +200,6 @@ void Candidates::generate(package::CandidateType type, bool force)
 
 	_rows->clear();
 
-	widget::ToggleButton* btnSelectAll =
-		utils::GetWidgetDerived<widget::ToggleButton>("ToggleButtonSelectAllAction");
-
 	switch(type) {
 	case package::Upgradable: {
 		get_column(0)->set_visible(true);
@@ -208,8 +208,6 @@ void Candidates::generate(package::CandidateType type, bool force)
 		_sortModel->set_sort_column(_rowData.Name, Gtk::SORT_ASCENDING);
 		set_model(_sortModel);
 
-		btnSelectAll->set_visible(true);
-
 		break;
 	}
 	case package::Installed: {
@@ -217,9 +215,6 @@ void Candidates::generate(package::CandidateType type, bool force)
 
 		_sortModel.reset();
 		set_model(_rows);
-
-		btnSelectAll->set_active(false);
-		btnSelectAll->set_visible(false);
 
 		break;
 	}
@@ -251,7 +246,9 @@ void Candidates::generate(package::CandidateType type, bool force)
 	DEBUG() << "Widget '" << get_name() << "': added new rows successfully.";
 
 	_currentType = type;
-} // namespace widget
+
+	utils::GetCustomWidget<widget::Menu>("MainMenu")->rebuildByType(type);
+}
 
 void Candidates::refreshActual()
 {
@@ -313,11 +310,15 @@ void Candidates::selectAll()
 
 	if(!get_column(0)->get_visible()) return;
 
-	widget::ToggleButton* btnSelectAll =
-		utils::GetWidgetDerived<widget::ToggleButton>("ToggleButtonSelectAllAction");
+	bool activeSelectAll = false;
+	if(Gtk::CheckMenuItem* item =
+		   utils::GetCustomWidget<widget::Menu>("MainMenu")
+			   ->getItem<Gtk::CheckMenuItem>("MenuSelectAllAction")) {
+		activeSelectAll = item->get_active();
+	}
 
 	for(Gtk::TreeModel::Row row : _rows->children()) {
-		if(btnSelectAll->get_active() /* button is pressed */)
+		if(activeSelectAll /* menu item is toggled */)
 			row[_rowData.Checked] = true;
 		else
 			row[_rowData.Checked] = false;
@@ -404,12 +405,8 @@ void Candidates::installSelected()
 
 void Candidates::waitForProgress(bool on)
 {
-	utils::widget::EnableWidgets(!on,
-								 "ButtonUpdateAction",
-								 "ButtonInstallAction",
-								 "ToggleButtonSelectAllAction",
-								 "ButtonOpenLog",
-								 "SectionsTree");
+	utils::widget::EnableWidgets(
+		!on, "ButtonOpenMenu", "ButtonOpenLog", "ButtonUpdate", "SectionsTree");
 }
 
 Candidates::RowType::RowType()

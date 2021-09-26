@@ -19,7 +19,8 @@ set(SOURCE_FILES
     src/extension/progressrange.cpp
     src/extension/progresspulse.cpp
     src/package/progressacquirestatus.cpp
-    src/widget/logwindow.cpp)
+    src/widget/logwindow.cpp
+    src/widget/menu.cpp)
 
 set(PRIVATE_HEADER_FILES
     src/package/cache.h
@@ -34,7 +35,8 @@ set(PRIVATE_HEADER_FILES
     src/extension/progressrange.h
     src/extension/progresspulse.h
     src/package/progressacquirestatus.h
-    src/widget/logwindow.h)
+    src/widget/logwindow.h
+    src/widget/menu.h)
 
 set(CXX_PROJECT_COMPILE_FLAGS -O -fstack-protector
     -Wall -pedantic -Wextra -Wcast-align -Wcomment -Wconversion

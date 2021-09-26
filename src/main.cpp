@@ -7,6 +7,7 @@
 #include "widget/progressbar.h"
 #include "widget/logwindow.h"
 #include "widget/candidates.h"
+#include "widget/menu.h"
 
 #include <gtkmm/application.h>
 #include <gtkmm/builder.h>
@@ -44,6 +45,20 @@ int main(int argc, char** argv)
 		utils::GetBuilderUI()->get_widget("LogWindow", t);
 
 		if(t && !t->is_visible()) t->show();
+	});
+
+	widget::Menu* menu = utils::GetCustomWidget<widget::Menu>("MainMenu");
+
+	widget::Button* btnOpenMenu =
+		utils::GetWidgetDerived<widget::Button>("ButtonOpenMenu");
+	btnOpenMenu->signal_clicked().connect([btnOpenMenu, menu]() {
+		if(!menu->is_popup_at_widget())
+			menu->popup_at_widget(btnOpenMenu,
+								  Gdk::GRAVITY_NORTH_EAST,
+								  Gdk::GRAVITY_NORTH_WEST,
+								  nullptr);
+		else
+			menu->hide();
 	});
 
 	widget::Candidates* candidatesView =
