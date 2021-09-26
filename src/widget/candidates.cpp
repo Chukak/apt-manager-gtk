@@ -201,7 +201,7 @@ void Candidates::generate(package::CandidateType type, bool force)
 	_rows->clear();
 
 	switch(type) {
-	case package::Upgradable: {
+	case package::Update: {
 		get_column(0)->set_visible(true);
 
 		_sortModel = ObjPtr<RowSort>(new RowSort(_rows));
@@ -210,7 +210,7 @@ void Candidates::generate(package::CandidateType type, bool force)
 
 		break;
 	}
-	case package::Installed: {
+	case package::Cached: {
 		get_column(0)->set_visible(false);
 
 		_sortModel.reset();
@@ -329,7 +329,7 @@ void Candidates::installSelected()
 {
 	DEBUG() << "Widget '" << get_name() << "': Candidates::installSelected was called.";
 
-	if(_currentType != package::Upgradable) return;
+	if(_currentType != package::Update) return;
 
 	decltype(_candidates)::const_iterator iterAllCandidates =
 		_candidates.find(static_cast<package::CandidateType>(_currentType));

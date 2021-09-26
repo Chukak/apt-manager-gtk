@@ -80,7 +80,7 @@ Cache::getCandidates(CandidateType type, bool& ok, Progress* pg, pkgAcquireStatu
 	ok = true;
 
 	switch(type) {
-	case CandidateType::Installed: {
+	case CandidateType::Cached: {
 		if(pg) pg->setRange(0, _cacheFile->GetPkgCache()->Head().PackageCount);
 
 		DEBUG() << "Generating installed packages (count: "
@@ -102,7 +102,7 @@ Cache::getCandidates(CandidateType type, bool& ok, Progress* pg, pkgAcquireStatu
 				<< result.size() << ").";
 		break;
 	}
-	case CandidateType::Upgradable: {
+	case CandidateType::Update: {
 		DEBUG() << "Updating the package cache...";
 
 		if(pg) {

@@ -55,7 +55,6 @@ Menu::showItems(bool show, const Args&... args)
 {
 	for(const std::string& name : {args...}) {
 		Gtk::MenuItem* item = getItem<Gtk::MenuItem>(name);
-		std::cerr << "item: " << item << std::endl;
 		if(item) {
 			show ? item->show() : item->hide();
 		}

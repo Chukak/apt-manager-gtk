@@ -53,10 +53,10 @@ class CandidateList : public std::list<Candidate>
  */
 enum CandidateType : int32_t
 {
-	Installed = 1,
-	Upgradable = 2,
-	FirstType = Installed,
-	LastType = Upgradable
+	Cached = 1,
+	Update = 2,
+	FirstType = Cached,
+	LastType = Update
 };
 
 /**

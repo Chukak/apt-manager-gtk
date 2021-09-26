@@ -37,11 +37,11 @@ Menu::Menu() : Gtk::Menu()
 void Menu::rebuildByType(package::CandidateType type)
 {
 	switch(type) {
-	case package::Installed: {
+	case package::Cached: {
 		showItems(false, "MenuSelectAllAction", "MenuInstallAction");
 		break;
 	}
-	case package::Upgradable: {
+	case package::Update: {
 		showItems(true, "MenuSelectAllAction", "MenuInstallAction");
 		break;
 	}

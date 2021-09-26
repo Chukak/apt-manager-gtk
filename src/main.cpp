@@ -61,6 +61,9 @@ int main(int argc, char** argv)
 			menu->hide();
 	});
 
+	widget::Button* btnUpdate = utils::GetWidgetDerived<widget::Button>("ButtonUpdate");
+	btnUpdate->set_sensitive(false);
+
 	widget::Candidates* candidatesView =
 		utils::GetWidgetDerived<widget::Candidates>("CandidatesTree");
 	(void)candidatesView;

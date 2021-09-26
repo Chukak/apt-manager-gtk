@@ -21,8 +21,7 @@ Sections::Sections(BaseObjectType* cobject, const ObjPtr<Gtk::Builder>& refBuild
 		render->set_fixed_size(-1, 48);
 		render->set_alignment(0.5, 0.5);
 
-		Gtk::TreeViewColumn* col =
-			Gtk::manage(new Gtk::TreeViewColumn("PACKAGES", *render));
+		Gtk::TreeViewColumn* col = Gtk::manage(new Gtk::TreeViewColumn("", *render));
 		col->add_attribute(render->property_background_rgba(), _rowData.BackgroundColor);
 		col->add_attribute(render->property_text(), _rowData.Title);
 		col->add_attribute(render->property_foreground_rgba(), _rowData.ForegroundColor);
@@ -35,12 +34,12 @@ Sections::Sections(BaseObjectType* cobject, const ObjPtr<Gtk::Builder>& refBuild
 		Gtk::TreeModel::Row row = *(_rows->append());
 
 		switch(t) {
-		case package::Installed: {
-			row[_rowData.Title] = "INSTALLED";
+		case package::Cached: {
+			row[_rowData.Title] = "CACHE";
 			break;
 		}
-		case package::Upgradable: {
-			row[_rowData.Title] = "UPGRADABLE";
+		case package::Update: {
+			row[_rowData.Title] = "UPDATE";
 			break;
 		}
 		}
