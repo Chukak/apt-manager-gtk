@@ -9,6 +9,7 @@
 #include "widget/candidates.h"
 #include "widget/menu.h"
 
+#include <gtkmm/box.h>
 #include <gtkmm/application.h>
 #include <gtkmm/builder.h>
 #include <gtkmm/applicationwindow.h>
@@ -78,6 +79,22 @@ int main(int argc, char** argv)
 
 	widget::Button* btnExit = utils::GetWidgetDerived<widget::Button>("ButtonExitAction");
 	btnExit->onClicked([&app]() { app->quit(); });
+
+	Gtk::Box* bottomEntryBox = nullptr;
+	utils::GetBuilderUI()->get_widget<Gtk::Box>("BottomEntryBox", bottomEntryBox);
+	if(!bottomEntryBox) {
+		INFO() << "Widget 'BottomEntryBox' not configured.";
+	}
+
+	widget::ToggleButton* btnOpenSearch =
+		utils::GetWidgetDerived<widget::ToggleButton>("ButtonOpenSearch");
+	btnOpenSearch->signal_pressed().connect([bottomEntryBox, btnOpenSearch]() {
+		if(!bottomEntryBox->is_visible()) {
+			bottomEntryBox->show();
+		} else {
+			bottomEntryBox->hide();
+		}
+	});
 
 	return app->run(*appWin);
 }

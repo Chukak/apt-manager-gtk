@@ -35,5 +35,11 @@ void MainWindow::initUI()
 	btnUpdate->set_label("REFRESH");
 	btnUpdate->set_tooltip_text(btnUpdate->get_label());
 	DEBUG() << "Widget '" << btnUpdate->get_name() << "': was configured.";
+
+	widget::ToggleButton* btnSearch =
+		utils::GetWidgetDerived<widget::ToggleButton>("ButtonOpenSearch");
+	btnSearch->set_label("SEARCH");
+	btnSearch->set_tooltip_text("Open Search");
+	DEBUG() << "Widget '" << btnSearch->get_name() << "': was configured.";
 }
 } // namespace widget
