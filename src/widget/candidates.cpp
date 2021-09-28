@@ -13,13 +13,23 @@
 #include <gtkmm/cellrenderertoggle.h>
 #include <gtkmm/main.h>
 #include <gtkmm/messagedialog.h>
+#include <gtkmm/treemodel.h>
+#include <gtkmm/entry.h>
 
 #include <thread>
+
+static const int _MaxCountRows_signal_changed =
+#ifdef _FIXED_ROWS_SIGNAL_CHANGED
+    _FIXED_ROWS_SIGNAL_CHANGED;
+#else
+    11000;
+#endif
 
 namespace widget
 {
 Candidates::Candidates(BaseObjectType* cobject, const ObjPtr<Gtk::Builder>& refBuilder) :
-	Gtk::TreeView(cobject), _rows(Gtk::ListStore::create(_rowData)), _sortModel(nullptr)
+    Gtk::TreeView(cobject), _rows(Gtk::ListStore::create(_rowData)), _sortModel(nullptr),
+    _filterModel(nullptr)
 {
 	(void)refBuilder;
 	DEBUG() << "Widget '" << get_name() << "': was created.";
@@ -135,6 +145,36 @@ Candidates::Candidates(BaseObjectType* cobject, const ObjPtr<Gtk::Builder>& refB
 				<< "': connected to signal_clicked(), using the slot "
 				   "Candidates::installSelected.";
 	}
+
+	Gtk::Entry* patternSearchEntry = nullptr;
+	utils::GetBuilderUI()->get_widget<Gtk::Entry>("EntryFind", patternSearchEntry);
+	if(patternSearchEntry) {
+		patternSearchEntry->signal_changed().connect([this, patternSearchEntry]() {
+			/*
+			 * If candidates more than _MaxCountRows_signal_changed, we have a slow
+			 * performance of a filter when the signal changed emited. But, we has the
+			 * Enter key, to find this pattern.
+			 */
+			if(_MaxCountRows_signal_changed != -1 &&
+			   this->_candidates
+					   .at(static_cast<package::CandidateType>(this->_currentType))
+					   .size() < _MaxCountRows_signal_changed /* TODO: */)
+				this->sortByPattern(patternSearchEntry->get_text());
+		});
+		patternSearchEntry->signal_activate().connect([this, patternSearchEntry]() {
+			this->sortByPattern(patternSearchEntry->get_text());
+		});
+	} else {
+		INFO() << "Widget 'EntryFind' not configured.";
+	}
+
+	Gtk::Box* bottomEntryBox = nullptr;
+	utils::GetBuilderUI()->get_widget<Gtk::Box>("BottomEntryBox", bottomEntryBox);
+	if(bottomEntryBox) {
+		bottomEntryBox->signal_hide().connect([this]() { this->sortByPattern(""); });
+	} else {
+		INFO() << "Widget 'BottomEntryBox' not configured.";
+	}
 }
 
 void Candidates::generate(package::CandidateType type, bool force)
@@ -203,22 +243,15 @@ void Candidates::generate(package::CandidateType type, bool force)
 	switch(type) {
 	case package::Update: {
 		get_column(0)->set_visible(true);
-
-		_sortModel = ObjPtr<RowSort>(new RowSort(_rows));
-		_sortModel->set_sort_column(_rowData.Name, Gtk::SORT_ASCENDING);
-		set_model(_sortModel);
-
 		break;
 	}
 	case package::Cached: {
 		get_column(0)->set_visible(false);
-
-		_sortModel.reset();
-		set_model(_rows);
-
 		break;
 	}
 	}
+
+	setModelByType(type);
 
 	progressRange.setRange(0, static_cast<int>(_candidates.at(type).size()));
 	progressRange.reset();
@@ -248,6 +281,16 @@ void Candidates::generate(package::CandidateType type, bool force)
 	_currentType = type;
 
 	utils::GetCustomWidget<widget::Menu>("MainMenu")->rebuildByType(type);
+
+	_sig_generated.emit(_candidates.at(type).size());
+
+	if(_filterModel) {
+		std::string pattern = _filterModel->CurrentPattern;
+
+		_filterModel.reset();
+
+		sortByPattern(pattern);
+	}
 }
 
 void Candidates::refreshActual()
@@ -405,8 +448,78 @@ void Candidates::installSelected()
 
 void Candidates::waitForProgress(bool on)
 {
-	utils::widget::EnableWidgets(
-		!on, "ButtonOpenMenu", "ButtonOpenLog", "ButtonUpdate", "SectionsTree");
+	utils::widget::EnableWidgets(!on,
+								 "ButtonOpenMenu",
+								 "ButtonOpenLog",
+								 "ButtonUpdate",
+								 "SectionsTree",
+								 "ButtonOpenSearch");
+}
+
+void Candidates::sortByPattern(const Glib::ustring& pattern)
+{
+	if(pattern.empty()) {
+		setModelByType(static_cast<package::CandidateType>(_currentType));
+		_filterModel.reset();
+
+		return;
+	}
+
+	utils::widget::EnableWidgets(false, "CandidatesTree");
+
+	if(_filterModel) {
+		_filterModel->CurrentPattern = pattern;
+		_filterModel->refilter();
+	} else {
+		_filterModel = ObjPtr<RowFilter>(new RowFilter(_rows, pattern));
+
+		_filterModel->set_visible_func([this](const Gtk::TreeModel::const_iterator& row) {
+			return (row->get_value(_rowData.Name)
+						.lowercase()
+						.find(_filterModel->CurrentPattern.lowercase()) !=
+					Glib::ustring::npos) ||
+				   (row->get_value(_rowData.Version)
+						.lowercase()
+						.find(_filterModel->CurrentPattern.lowercase()) !=
+					Glib::ustring::npos) ||
+				   (row->get_value(_rowData.Architecture)
+						.lowercase()
+						.find(_filterModel->CurrentPattern.lowercase()) !=
+					Glib::ustring::npos) ||
+				   (row->get_value(_rowData.Origin)
+						.lowercase()
+						.find(_filterModel->CurrentPattern.lowercase()) !=
+					Glib::ustring::npos);
+		});
+
+		set_model(_filterModel);
+	}
+
+	utils::widget::EnableWidgets(true, "CandidatesTree");
+}
+
+void Candidates::setModelByType(package::CandidateType type)
+{
+	switch(type) {
+	case package::Update: {
+		_sortModel = ObjPtr<RowSort>(new RowSort(_rows));
+		_sortModel->set_sort_column(_rowData.Name, Gtk::SORT_ASCENDING);
+		set_model(_sortModel);
+
+		break;
+	}
+	case package::Cached: {
+		_sortModel.reset();
+		set_model(_rows);
+
+		break;
+	}
+	}
+}
+
+decltype(Candidates::_sig_generated) Candidates::signal_generated()
+{
+	return _sig_generated;
 }
 
 Candidates::RowType::RowType()
@@ -427,5 +540,11 @@ Candidates::RowType::RowType()
 
 Candidates::RowSort::RowSort(const ObjPtr<Gtk::ListStore>& model) :
 	Gtk::TreeModelSort(model)
+{}
+
+Candidates::RowFilter::RowFilter(const ObjPtr<Gtk::ListStore>& model,
+                                 const std::string& pattern) :
+    Gtk::TreeModelFilter(model),
+    CurrentPattern(pattern)
 {}
 } // namespace widget

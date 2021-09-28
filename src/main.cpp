@@ -67,7 +67,6 @@ int main(int argc, char** argv)
 
 	widget::Candidates* candidatesView =
 		utils::GetWidgetDerived<widget::Candidates>("CandidatesTree");
-	(void)candidatesView;
 
 	widget::Sections* sectionsView =
 		utils::GetWidgetDerived<widget::Sections>("SectionsTree");
@@ -88,6 +87,7 @@ int main(int argc, char** argv)
 
 	widget::ToggleButton* btnOpenSearch =
 		utils::GetWidgetDerived<widget::ToggleButton>("ButtonOpenSearch");
+	btnOpenSearch->set_sensitive(false);
 	btnOpenSearch->signal_pressed().connect([bottomEntryBox, btnOpenSearch]() {
 		if(!bottomEntryBox->is_visible()) {
 			bottomEntryBox->show();
@@ -95,6 +95,9 @@ int main(int argc, char** argv)
 			bottomEntryBox->hide();
 		}
 	});
+
+	candidatesView->signal_generated().connect(
+		[btnOpenSearch](size_t count) { btnOpenSearch->set_sensitive(count > 0); });
 
 	return app->run(*appWin);
 }

@@ -8,6 +8,7 @@
 #include <gtkmm/builder.h>
 #include <gtkmm/liststore.h>
 #include <gtkmm/treemodelsort.h>
+#include <gtkmm/treemodelfilter.h>
 
 namespace widget
 {
@@ -17,7 +18,14 @@ class Candidates : public Gtk::TreeView
     Candidates(BaseObjectType* cobject, const ObjPtr<Gtk::Builder>& refBuilder);
     virtual ~Candidates() = default;
 
-    void generate(package::CandidateType type, bool force = false);
+	void generate(package::CandidateType type, bool force = false);
+	void sortByPattern(const Glib::ustring& pattern);
+
+  private:
+    sigc::signal<void(size_t)> _sig_generated;
+
+  public:
+    decltype(_sig_generated) signal_generated();
 
   private:
     void setRowStyle(Gtk::TreeModel::Row row);
@@ -27,6 +35,7 @@ class Candidates : public Gtk::TreeView
     void selectAll();
     void installSelected();
     void waitForProgress(bool on);
+    void setModelByType(package::CandidateType type);
 
   private:
     class RowType : public Gtk::TreeModel::ColumnRecord
@@ -50,12 +59,21 @@ class Candidates : public Gtk::TreeView
 		RowSort(const ObjPtr<Gtk::ListStore>& model);
 	};
 
+	class RowFilter : public Gtk::TreeModelFilter
+	{
+	  public:
+		RowFilter(const ObjPtr<Gtk::ListStore>& model, const std::string& pattern = "");
+
+		Glib::ustring CurrentPattern;
+	};
+
   private:
     RowType _rowData;
     ObjPtr<Gtk::ListStore> _rows;
     std::map<package::CandidateType, package::CandidateList> _candidates;
     int32_t _currentType{-1};
     ObjPtr<RowSort> _sortModel;
+    ObjPtr<RowFilter> _filterModel;
 };
 } // namespace widget
 
