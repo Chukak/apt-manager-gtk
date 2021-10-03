@@ -53,10 +53,11 @@ class CandidateList : public std::list<Candidate>
  */
 enum CandidateType : int32_t
 {
-	Cached = 1,
+	List_Of_Installed = 1,
 	Update = 2,
-	FirstType = Cached,
-	LastType = Update
+	Install = 3,
+	FirstType = List_Of_Installed,
+	LastType = Install
 };
 
 /**
@@ -102,12 +103,24 @@ class Cache
   private:
     /**
      * @brief createCandidate
-     * Creates a new candidate using PkgIterator.
-     * @param packetIter
+     * Creates a new candidate using VerIterator.
+     * @param verIter
      * @param ok
      * @return A new candidate.
      */
-    Candidate createCandidate(pkgCache::PkgIterator packetIter, bool& ok);
+    Candidate createCandidate(pkgCache::VerIterator verIter, bool& ok);
+    /**
+     * @brief createCandidatesByType
+     * Creates a new candidate using a type and appends it to the list.
+     * @param list
+     * @param type
+     * @param ok
+     * @param progress
+     */
+    void createCandidatesByType(CandidateList& list,
+                                CandidateType type,
+                                bool& ok,
+                                Progress* progress = nullptr);
 
   private:
     bool _isValid{false};
