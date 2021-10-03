@@ -1,5 +1,6 @@
 #include "sections.h"
 #include "candidates.h"
+#include "menu.h"
 
 #include "../package/cache.h"
 #include "../utils.h"
@@ -46,6 +47,10 @@ Sections::Sections(BaseObjectType* cobject, const ObjPtr<Gtk::Builder>& refBuild
 			row[_rowData.Title] = "INSTALL";
 			break;
 		}
+		case package::Delete: {
+			row[_rowData.Title] = "DELETE";
+			break;
+		}
 		}
 
 		Gdk::RGBA background;
@@ -80,6 +85,24 @@ void Sections::onRowSelected()
 		widget::Candidates* cand =
 			utils::GetWidgetDerived<widget::Candidates>("CandidatesTree");
 		cand->generate(static_cast<package::CandidateType>(type));
+
+		widget::Menu* menu = utils::GetCustomWidget<widget::Menu>("MainMenu");
+		if(Gtk::MenuItem* item = menu->getItem<Gtk::MenuItem>("MenuProcessAction")) {
+			switch(type) {
+			case package::Install: {
+				item->set_label("Install Selected");
+				break;
+			}
+			case package::Update: {
+				item->set_label("Update Selected");
+				break;
+			}
+			case package::Delete: {
+				item->set_label("Delete Selected");
+				break;
+			}
+			}
+		}
 	}
 }
 

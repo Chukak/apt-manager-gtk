@@ -138,12 +138,12 @@ Candidates::Candidates(BaseObjectType* cobject, const ObjPtr<Gtk::Builder>& refB
 				   "Candidates::selectAll.";
 	}
 
-	if(Gtk::MenuItem* item = menu->getItem<Gtk::MenuItem>("MenuInstallAction")) {
+	if(Gtk::MenuItem* item = menu->getItem<Gtk::MenuItem>("MenuProcessAction")) {
 		item->signal_activate().connect(
-			sigc::mem_fun(*this, &Candidates::installSelected));
+			sigc::mem_fun(*this, &Candidates::processSelected));
 		DEBUG() << "Widget '" << item->get_name()
 				<< "': connected to signal_clicked(), using the slot "
-				   "Candidates::installSelected.";
+				   "Candidates::processSelected.";
 	}
 
 	Gtk::Entry* patternSearchEntry = nullptr;
@@ -321,12 +321,7 @@ void Candidates::setColumnRender(Gtk::TreeViewColumn* column, Gtk::CellRenderer*
 
 void Candidates::onToggleColumn(const Glib::ustring& path)
 {
-	Gtk::TreeModel::iterator iter;
-	if(get_model() == _sortModel) {
-		iter = _sortModel->get_iter(path);
-	} else {
-		iter = _rows->get_iter(path);
-	}
+	Gtk::TreeModel::iterator iter = get_model()->get_iter(path);
 
 	if(iter) {
 		(*iter)[_rowData.Checked] = !(*iter)[_rowData.Checked];
@@ -346,7 +341,7 @@ void Candidates::selectAll()
 		activeSelectAll = item->get_active();
 	}
 
-	for(Gtk::TreeModel::Row row : _rows->children()) {
+	for(Gtk::TreeModel::Row row : get_model()->children()) {
 		if(activeSelectAll /* menu item is toggled */)
 			row[_rowData.Checked] = true;
 		else
@@ -354,11 +349,11 @@ void Candidates::selectAll()
 	}
 }
 
-void Candidates::installSelected()
+void Candidates::processSelected()
 {
-	DEBUG() << "Widget '" << get_name() << "': Candidates::installSelected was called.";
+	DEBUG() << "Widget '" << get_name() << "': Candidates::processSelected was called.";
 
-	if(_currentType != package::Update) return;
+	if(_currentType == package::List_Of_Installed) return;
 
 	decltype(_candidates)::const_iterator iterAllCandidates =
 		_candidates.find(static_cast<package::CandidateType>(_currentType));
@@ -421,8 +416,10 @@ void Candidates::installSelected()
 		return;
 	}
 
-	if(!cache.installCandidates(listSelected, &progressRange)) {
-		Gtk::MessageDialog dialog("Errors occurred when installing packages.");
+	if(!cache.processCandidates(listSelected,
+								static_cast<package::CandidateType>(_currentType),
+								&progressRange)) {
+		Gtk::MessageDialog dialog("Errors occurred when processing packages.");
 		dialog.set_title("Error!");
 		dialog.run();
 	}
@@ -487,7 +484,8 @@ void Candidates::setModelByType(package::CandidateType type)
 {
 	switch(type) {
 	case package::List_Of_Installed:
-	case package::Update: {
+	case package::Update:
+	case package::Delete: {
 		_sortModel = ObjPtr<RowSort>(new RowSort(_rows));
 		_sortModel->set_sort_column(_rowData.Name, Gtk::SORT_ASCENDING);
 		set_model(_sortModel);

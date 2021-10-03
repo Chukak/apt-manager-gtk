@@ -17,8 +17,8 @@ Menu::Menu() : Gtk::Menu()
 		actSelectAll->hide();
 	}
 	{
-		Gtk::MenuItem* actInstall = Gtk::manage(new Gtk::MenuItem("Install"));
-		actInstall->set_name("MenuInstallAction");
+		Gtk::MenuItem* actInstall = Gtk::manage(new Gtk::MenuItem(""));
+		actInstall->set_name("MenuProcessAction");
 
 		append(*actInstall);
 		_items.push_back(actInstall);
@@ -38,12 +38,13 @@ void Menu::rebuildByType(package::CandidateType type)
 {
 	switch(type) {
 	case package::List_Of_Installed: {
-		showItems(false, "MenuSelectAllAction", "MenuInstallAction");
+		showItems(false, "MenuSelectAllAction", "MenuProcessAction");
 		break;
 	}
 	case package::Update:
-	case package::Install: {
-		showItems(true, "MenuSelectAllAction", "MenuInstallAction");
+	case package::Install:
+	case package::Delete: {
+		showItems(true, "MenuSelectAllAction", "MenuProcessAction");
 		break;
 	}
 	}

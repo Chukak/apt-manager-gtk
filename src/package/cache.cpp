@@ -80,7 +80,8 @@ Cache::getCandidates(CandidateType type, bool& ok, Progress* pg, pkgAcquireStatu
 	ok = true;
 
 	switch(type) {
-	case CandidateType::List_Of_Installed: {
+	case CandidateType::List_Of_Installed:
+	case CandidateType::Delete: {
 		break;
 	}
 	case CandidateType::Update:
@@ -200,7 +201,7 @@ void Cache::createCandidatesByType(CandidateList& list,
 
 		pkgCache::PkgIterator currentPkgIter = verIter.ParentPkg();
 
-		if((type == CandidateType::List_Of_Installed &&
+		if(((type == CandidateType::List_Of_Installed || type == CandidateType::Delete) &&
 			(currentPkgIter.CurrentVer() == verIter ||
 			 (state.CandidateVer == verIter && state.Upgradable()))) ||
 		   (type == CandidateType::Update && (state.Upgradable() && state.InstallVer)) ||
@@ -212,7 +213,7 @@ void Cache::createCandidatesByType(CandidateList& list,
 	}
 }
 
-bool Cache::installCandidates(const CandidateList& list, Progress* pg)
+bool Cache::processCandidates(const CandidateList& list, CandidateType type, Progress* pg)
 {
 	if(pg) pg->setRange(0, 7);
 
@@ -244,7 +245,7 @@ bool Cache::installCandidates(const CandidateList& list, Progress* pg)
 
 	pkgPolicy* policy = _cacheFile->GetPolicy();
 
-	size_t markInstalled = 0;
+	size_t markProcessed = 0;
 	for(pkgCache::PkgIterator pkg = depCache->PkgBegin(); !pkg.end(); ++pkg) {
 		CandidateList::const_iterator found =
 			std::find_if(list.cbegin(),
@@ -254,14 +255,31 @@ bool Cache::installCandidates(const CandidateList& list, Progress* pg)
 						 });
 
 		if(found != list.cend()) {
-			if(!depCache->MarkInstall(pkg, true, 0, false, true)) {
-				INFO() << "depCache->MarkInstall(...) == false";
-				utils::PrintPkgError();
-			} else
-				++markInstalled;
+			switch(type) {
+			case CandidateType::Update:
+			case CandidateType::Install: {
+				if(!depCache->MarkInstall(pkg, true, 0, false, true)) {
+					INFO() << "depCache->MarkInstall(...) == false";
+					utils::PrintPkgError();
+				} else
+					++markProcessed;
+
+				break;
+			}
+			case CandidateType::Delete: {
+				if(!depCache->MarkDelete(pkg, true, 0, true)) {
+					INFO() << "depCache->MarkDelete(...) == false";
+					utils::PrintPkgError();
+				} else
+					++markProcessed;
+			}
+			default: {
+				break;
+			}
+			}
 		}
 	}
-	DEBUG() << markInstalled << " packages are marked as installed.";
+	DEBUG() << markProcessed << " packages are will processed.";
 
 	if(pg) pg->increment();
 
@@ -336,7 +354,7 @@ bool Cache::installCandidates(const CandidateList& list, Progress* pg)
 	APT::Progress::PackageManager* managerProgress =
 		APT::Progress::PackageManagerProgressFactory();
 
-	if(pg) pg->setRange(0, static_cast<int>(markInstalled));
+	if(pg) pg->setRange(0, static_cast<int>(markProcessed));
 
 	DEBUG() << "Redirecting stdout and stderr to temporarily file.\n";
 	utils::RedirectLogOutputToTemporaryFile(true);

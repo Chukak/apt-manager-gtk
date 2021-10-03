@@ -33,7 +33,7 @@ class Candidates : public Gtk::TreeView
     void refreshActual();
     void onToggleColumn(const Glib::ustring& path);
     void selectAll();
-    void installSelected();
+    void processSelected();
     void waitForProgress(bool on);
     void setModelByType(package::CandidateType type);
 

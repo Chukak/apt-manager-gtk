@@ -56,8 +56,9 @@ enum CandidateType : int32_t
 	List_Of_Installed = 1,
 	Update = 2,
 	Install = 3,
+	Delete = 4,
 	FirstType = List_Of_Installed,
-	LastType = Install
+	LastType = Delete
 };
 
 /**
@@ -93,12 +94,19 @@ class Cache
                                 pkgAcquireStatus* status = nullptr);
     /**
      * @brief installCandidates
-     * Installs candidates from the passed list.
+     * Processes candidates from the passed list.
+     * Type value:
+     *  * CandidateType::Update - install all the newest versions of candidates.
+     *  * CandidateType::Install - install all the candidates.
+     *  * CandidateType::Delete - remove all the candidates.
      * @param list List of candidates
+     * @param type Type
      * @param progress The pointer to the Progress object.
      * @return Result of installation.
      */
-    bool installCandidates(const CandidateList& list, Progress* progress = nullptr);
+    bool processCandidates(const CandidateList& list,
+                           CandidateType type,
+                           Progress* progress = nullptr);
 
   private:
     /**
