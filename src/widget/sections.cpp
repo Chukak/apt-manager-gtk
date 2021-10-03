@@ -34,12 +34,16 @@ Sections::Sections(BaseObjectType* cobject, const ObjPtr<Gtk::Builder>& refBuild
 		Gtk::TreeModel::Row row = *(_rows->append());
 
 		switch(t) {
-		case package::Cached: {
-			row[_rowData.Title] = "CACHE";
+		case package::List_Of_Installed: {
+			row[_rowData.Title] = "LIST OF INSTALLED";
 			break;
 		}
 		case package::Update: {
 			row[_rowData.Title] = "UPDATE";
+			break;
+		}
+		case package::Install: {
+			row[_rowData.Title] = "INSTALL";
 			break;
 		}
 		}

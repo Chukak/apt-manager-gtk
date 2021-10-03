@@ -22,7 +22,7 @@ static const int _MaxCountRows_signal_changed =
 #ifdef _FIXED_ROWS_SIGNAL_CHANGED
     _FIXED_ROWS_SIGNAL_CHANGED;
 #else
-    11000;
+    13000;
 #endif
 
 namespace widget
@@ -240,16 +240,7 @@ void Candidates::generate(package::CandidateType type, bool force)
 
 	_rows->clear();
 
-	switch(type) {
-	case package::Update: {
-		get_column(0)->set_visible(true);
-		break;
-	}
-	case package::Cached: {
-		get_column(0)->set_visible(false);
-		break;
-	}
-	}
+	get_column(0)->set_visible(type != package::List_Of_Installed);
 
 	setModelByType(type);
 
@@ -284,13 +275,8 @@ void Candidates::generate(package::CandidateType type, bool force)
 
 	_sig_generated.emit(_candidates.at(type).size());
 
-	if(_filterModel) {
-		std::string pattern = _filterModel->CurrentPattern;
-
-		_filterModel.reset();
-
-		sortByPattern(pattern);
-	}
+	// remove _filterModel
+	sortByPattern("");
 }
 
 void Candidates::refreshActual()
@@ -461,7 +447,6 @@ void Candidates::sortByPattern(const Glib::ustring& pattern)
 	if(pattern.empty()) {
 		setModelByType(static_cast<package::CandidateType>(_currentType));
 		_filterModel.reset();
-
 		return;
 	}
 
@@ -501,6 +486,7 @@ void Candidates::sortByPattern(const Glib::ustring& pattern)
 void Candidates::setModelByType(package::CandidateType type)
 {
 	switch(type) {
+	case package::List_Of_Installed:
 	case package::Update: {
 		_sortModel = ObjPtr<RowSort>(new RowSort(_rows));
 		_sortModel->set_sort_column(_rowData.Name, Gtk::SORT_ASCENDING);
@@ -508,10 +494,9 @@ void Candidates::setModelByType(package::CandidateType type)
 
 		break;
 	}
-	case package::Cached: {
+	case package::Install: {
 		_sortModel.reset();
 		set_model(_rows);
-
 		break;
 	}
 	}

@@ -88,7 +88,7 @@ int main(int argc, char** argv)
 	widget::ToggleButton* btnOpenSearch =
 		utils::GetWidgetDerived<widget::ToggleButton>("ButtonOpenSearch");
 	btnOpenSearch->set_sensitive(false);
-	btnOpenSearch->signal_pressed().connect([bottomEntryBox, btnOpenSearch]() {
+	btnOpenSearch->signal_pressed().connect([bottomEntryBox]() {
 		if(!bottomEntryBox->is_visible()) {
 			bottomEntryBox->show();
 		} else {
