@@ -3,6 +3,7 @@
 #include "../utils.h"
 #include "button.h"
 #include "progressbar.h"
+#include "menu.h"
 #include "../extension/progressrange.h"
 #include "../extension/progresspulse.h"
 
@@ -12,13 +13,23 @@
 #include <gtkmm/cellrenderertoggle.h>
 #include <gtkmm/main.h>
 #include <gtkmm/messagedialog.h>
+#include <gtkmm/treemodel.h>
+#include <gtkmm/entry.h>
 
 #include <thread>
+
+static const int _MaxCountRows_signal_changed =
+#ifdef _FIXED_ROWS_SIGNAL_CHANGED
+    _FIXED_ROWS_SIGNAL_CHANGED;
+#else
+    13000;
+#endif
 
 namespace widget
 {
 Candidates::Candidates(BaseObjectType* cobject, const ObjPtr<Gtk::Builder>& refBuilder) :
-	Gtk::TreeView(cobject), _rows(Gtk::ListStore::create(_rowData)), _sortModel(nullptr)
+    Gtk::TreeView(cobject), _rows(Gtk::ListStore::create(_rowData)), _sortModel(nullptr),
+    _filterModel(nullptr)
 {
 	(void)refBuilder;
 	DEBUG() << "Widget '" << get_name() << "': was created.";
@@ -112,26 +123,58 @@ Candidates::Candidates(BaseObjectType* cobject, const ObjPtr<Gtk::Builder>& refB
 		col->set_resizable(false);
 	}
 
-	widget::Button* btnUpdate =
-		utils::GetWidgetDerived<widget::Button>("ButtonUpdateAction");
+	widget::Button* btnUpdate = utils::GetWidgetDerived<widget::Button>("ButtonUpdate");
 	btnUpdate->signal_clicked().connect(sigc::mem_fun(*this, &Candidates::refreshActual));
 	DEBUG()
 		<< "Widget '" << btnUpdate->get_name()
 		<< "': connected to signal_clicked(), using the slot Candidates::refreshActual.";
 
-	widget::ToggleButton* btnSelectAll =
-		utils::GetWidgetDerived<widget::ToggleButton>("ToggleButtonSelectAllAction");
-	btnSelectAll->signal_clicked().connect(sigc::mem_fun(*this, &Candidates::selectAll));
-	DEBUG() << "Widget '" << btnSelectAll->get_name()
-			<< "': connected to signal_clicked(), using the slot Candidates::selectAll.";
+	widget::Menu* menu = utils::GetCustomWidget<widget::Menu>("MainMenu");
+	if(Gtk::CheckMenuItem* item =
+		   menu->getItem<Gtk::CheckMenuItem>("MenuSelectAllAction")) {
+		item->signal_toggled().connect(sigc::mem_fun(*this, &Candidates::selectAll));
+		DEBUG() << "Widget '" << item->get_name()
+				<< "': connected to signal_clicked(), using the slot "
+				   "Candidates::selectAll.";
+	}
 
-	widget::Button* btnInstall =
-		utils::GetWidgetDerived<widget::Button>("ButtonInstallAction");
-	btnInstall->signal_clicked().connect(
-		sigc::mem_fun(*this, &Candidates::installSelected));
-	DEBUG() << "Widget '" << btnInstall->get_name()
-			<< "': connected to signal_clicked(), using the slot "
-			   "Candidates::installSelected.";
+	if(Gtk::MenuItem* item = menu->getItem<Gtk::MenuItem>("MenuProcessAction")) {
+		item->signal_activate().connect(
+			sigc::mem_fun(*this, &Candidates::processSelected));
+		DEBUG() << "Widget '" << item->get_name()
+				<< "': connected to signal_clicked(), using the slot "
+				   "Candidates::processSelected.";
+	}
+
+	Gtk::Entry* patternSearchEntry = nullptr;
+	utils::GetBuilderUI()->get_widget<Gtk::Entry>("EntryFind", patternSearchEntry);
+	if(patternSearchEntry) {
+		patternSearchEntry->signal_changed().connect([this, patternSearchEntry]() {
+			/*
+			 * If candidates more than _MaxCountRows_signal_changed, we have a slow
+			 * performance of a filter when the signal changed emited. But, we has the
+			 * Enter key, to find this pattern.
+			 */
+			if(_MaxCountRows_signal_changed != -1 &&
+			   this->_candidates
+					   .at(static_cast<package::CandidateType>(this->_currentType))
+					   .size() < _MaxCountRows_signal_changed /* TODO: */)
+				this->sortByPattern(patternSearchEntry->get_text());
+		});
+		patternSearchEntry->signal_activate().connect([this, patternSearchEntry]() {
+			this->sortByPattern(patternSearchEntry->get_text());
+		});
+	} else {
+		INFO() << "Widget 'EntryFind' not configured.";
+	}
+
+	Gtk::Box* bottomEntryBox = nullptr;
+	utils::GetBuilderUI()->get_widget<Gtk::Box>("BottomEntryBox", bottomEntryBox);
+	if(bottomEntryBox) {
+		bottomEntryBox->signal_hide().connect([this]() { this->sortByPattern(""); });
+	} else {
+		INFO() << "Widget 'BottomEntryBox' not configured.";
+	}
 }
 
 void Candidates::generate(package::CandidateType type, bool force)
@@ -197,33 +240,9 @@ void Candidates::generate(package::CandidateType type, bool force)
 
 	_rows->clear();
 
-	widget::ToggleButton* btnSelectAll =
-		utils::GetWidgetDerived<widget::ToggleButton>("ToggleButtonSelectAllAction");
+	get_column(0)->set_visible(type != package::List_Of_Installed);
 
-	switch(type) {
-	case package::Upgradable: {
-		get_column(0)->set_visible(true);
-
-		_sortModel = ObjPtr<RowSort>(new RowSort(_rows));
-		_sortModel->set_sort_column(_rowData.Name, Gtk::SORT_ASCENDING);
-		set_model(_sortModel);
-
-		btnSelectAll->set_visible(true);
-
-		break;
-	}
-	case package::Installed: {
-		get_column(0)->set_visible(false);
-
-		_sortModel.reset();
-		set_model(_rows);
-
-		btnSelectAll->set_active(false);
-		btnSelectAll->set_visible(false);
-
-		break;
-	}
-	}
+	setModelByType(type);
 
 	progressRange.setRange(0, static_cast<int>(_candidates.at(type).size()));
 	progressRange.reset();
@@ -251,7 +270,14 @@ void Candidates::generate(package::CandidateType type, bool force)
 	DEBUG() << "Widget '" << get_name() << "': added new rows successfully.";
 
 	_currentType = type;
-} // namespace widget
+
+	utils::GetCustomWidget<widget::Menu>("MainMenu")->rebuildByType(type);
+
+	_sig_generated.emit(_candidates.at(type).size());
+
+	// remove _filterModel
+	sortByPattern("");
+}
 
 void Candidates::refreshActual()
 {
@@ -295,12 +321,7 @@ void Candidates::setColumnRender(Gtk::TreeViewColumn* column, Gtk::CellRenderer*
 
 void Candidates::onToggleColumn(const Glib::ustring& path)
 {
-	Gtk::TreeModel::iterator iter;
-	if(get_model() == _sortModel) {
-		iter = _sortModel->get_iter(path);
-	} else {
-		iter = _rows->get_iter(path);
-	}
+	Gtk::TreeModel::iterator iter = get_model()->get_iter(path);
 
 	if(iter) {
 		(*iter)[_rowData.Checked] = !(*iter)[_rowData.Checked];
@@ -313,22 +334,26 @@ void Candidates::selectAll()
 
 	if(!get_column(0)->get_visible()) return;
 
-	widget::ToggleButton* btnSelectAll =
-		utils::GetWidgetDerived<widget::ToggleButton>("ToggleButtonSelectAllAction");
+	bool activeSelectAll = false;
+	if(Gtk::CheckMenuItem* item =
+		   utils::GetCustomWidget<widget::Menu>("MainMenu")
+			   ->getItem<Gtk::CheckMenuItem>("MenuSelectAllAction")) {
+		activeSelectAll = item->get_active();
+	}
 
-	for(Gtk::TreeModel::Row row : _rows->children()) {
-		if(btnSelectAll->get_active() /* button is pressed */)
+	for(Gtk::TreeModel::Row row : get_model()->children()) {
+		if(activeSelectAll /* menu item is toggled */)
 			row[_rowData.Checked] = true;
 		else
 			row[_rowData.Checked] = false;
 	}
 }
 
-void Candidates::installSelected()
+void Candidates::processSelected()
 {
-	DEBUG() << "Widget '" << get_name() << "': Candidates::installSelected was called.";
+	DEBUG() << "Widget '" << get_name() << "': Candidates::processSelected was called.";
 
-	if(_currentType != package::Upgradable) return;
+	if(_currentType == package::List_Of_Installed) return;
 
 	decltype(_candidates)::const_iterator iterAllCandidates =
 		_candidates.find(static_cast<package::CandidateType>(_currentType));
@@ -391,8 +416,10 @@ void Candidates::installSelected()
 		return;
 	}
 
-	if(!cache.installCandidates(listSelected, &progressRange)) {
-		Gtk::MessageDialog dialog("Errors occurred when installing packages.");
+	if(!cache.processCandidates(listSelected,
+								static_cast<package::CandidateType>(_currentType),
+								&progressRange)) {
+		Gtk::MessageDialog dialog("Errors occurred when processing packages.");
 		dialog.set_title("Error!");
 		dialog.run();
 	}
@@ -405,11 +432,77 @@ void Candidates::installSelected()
 void Candidates::waitForProgress(bool on)
 {
 	utils::widget::EnableWidgets(!on,
-								 "ButtonUpdateAction",
-								 "ButtonInstallAction",
-								 "ToggleButtonSelectAllAction",
+								 "ButtonOpenMenu",
 								 "ButtonOpenLog",
-								 "SectionsTree");
+								 "ButtonUpdate",
+								 "SectionsTree",
+								 "ButtonOpenSearch");
+}
+
+void Candidates::sortByPattern(const Glib::ustring& pattern)
+{
+	if(pattern.empty()) {
+		setModelByType(static_cast<package::CandidateType>(_currentType));
+		_filterModel.reset();
+		return;
+	}
+
+	utils::widget::EnableWidgets(false, "CandidatesTree");
+
+	if(_filterModel) {
+		_filterModel->CurrentPattern = pattern;
+		_filterModel->refilter();
+	} else {
+		_filterModel = ObjPtr<RowFilter>(new RowFilter(_rows, pattern));
+
+		_filterModel->set_visible_func([this](const Gtk::TreeModel::const_iterator& row) {
+			return (row->get_value(_rowData.Name)
+						.lowercase()
+						.find(_filterModel->CurrentPattern.lowercase()) !=
+					Glib::ustring::npos) ||
+				   (row->get_value(_rowData.Version)
+						.lowercase()
+						.find(_filterModel->CurrentPattern.lowercase()) !=
+					Glib::ustring::npos) ||
+				   (row->get_value(_rowData.Architecture)
+						.lowercase()
+						.find(_filterModel->CurrentPattern.lowercase()) !=
+					Glib::ustring::npos) ||
+				   (row->get_value(_rowData.Origin)
+						.lowercase()
+						.find(_filterModel->CurrentPattern.lowercase()) !=
+					Glib::ustring::npos);
+		});
+
+		set_model(_filterModel);
+	}
+
+	utils::widget::EnableWidgets(true, "CandidatesTree");
+}
+
+void Candidates::setModelByType(package::CandidateType type)
+{
+	switch(type) {
+	case package::List_Of_Installed:
+	case package::Update:
+	case package::Delete: {
+		_sortModel = ObjPtr<RowSort>(new RowSort(_rows));
+		_sortModel->set_sort_column(_rowData.Name, Gtk::SORT_ASCENDING);
+		set_model(_sortModel);
+
+		break;
+	}
+	case package::Install: {
+		_sortModel.reset();
+		set_model(_rows);
+		break;
+	}
+	}
+}
+
+decltype(Candidates::_sig_generated) Candidates::signal_generated()
+{
+	return _sig_generated;
 }
 
 Candidates::RowType::RowType()
@@ -430,5 +523,11 @@ Candidates::RowType::RowType()
 
 Candidates::RowSort::RowSort(const ObjPtr<Gtk::ListStore>& model) :
 	Gtk::TreeModelSort(model)
+{}
+
+Candidates::RowFilter::RowFilter(const ObjPtr<Gtk::ListStore>& model,
+                                 const std::string& pattern) :
+    Gtk::TreeModelFilter(model),
+    CurrentPattern(pattern)
 {}
 } // namespace widget

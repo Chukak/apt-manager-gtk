@@ -164,7 +164,7 @@ class Debug
 ObjPtr<Gtk::Builder> GetBuilderUI();
 /**
  * @brief GetWidgetDerived
- * Initialize a widget from the builder by type.
+ * Get a widget from the builder by type.
  * @tparam Widget class
  * @param widgetID Widget ID
  * @return The widget object.
@@ -179,9 +179,48 @@ TYPE* GetWidgetDerived(const std::string& widgetID)
 		std::string("\nCheck the '") + UI_FILENAME + std::string("' file."));
 	return t;
 }
+/**
+ * @brief GetCustomWidget
+ * Get a custom widget. Is widget is not wxists, initialize this.
+ * @tparam Widget class
+ * @param widgetID Widget ID
+ * @return The widget object.
+ */
+template<typename TYPE>
+TYPE* GetCustomWidget(const std::string& widgetID)
+{
+	static std::map<std::string, std::unique_ptr<TYPE>> _customWidgets;
+
+	typename decltype(_customWidgets)::iterator found = _customWidgets.find(widgetID);
+	if(found != _customWidgets.end()) return found->second.get();
+
+	_customWidgets.insert(std::make_pair(widgetID, std::make_unique<TYPE>()));
+	return GetCustomWidget<TYPE>(widgetID);
+}
 
 namespace widget
 {
+namespace property
+{
+using Val = void*;
+/**
+ * @brief Enable
+ * @return The enabled property value.
+ */
+Val Enable();
+/**
+ * @brief Disable
+ * @return The disable property value.
+ */
+Val Disable();
+
+/**
+ * @brief SetSensitiveSkip
+ * The sensitive property.
+ */
+static const Glib::ustring SetSensitiveSkip = "widget-property-sensitive-skip";
+} // namespace property
+
 /**
  * @brief EnableWidgets
  * Enables or disables widgets, found by name.
@@ -198,7 +237,8 @@ EnableWidgets(bool enable, const Args&... args)
 		GetBuilderUI()->get_widget(name, w);
 
 		if(w) {
-			w->set_sensitive(enable);
+			property::Val prop = w->get_data(property::SetSensitiveSkip);
+			if(!prop) w->set_sensitive(enable);
 		}
 	}
 }

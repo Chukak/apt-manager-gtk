@@ -53,10 +53,12 @@ class CandidateList : public std::list<Candidate>
  */
 enum CandidateType : int32_t
 {
-	Installed = 1,
-	Upgradable = 2,
-	FirstType = Installed,
-	LastType = Upgradable
+	List_Of_Installed = 1,
+	Update = 2,
+	Install = 3,
+	Delete = 4,
+	FirstType = List_Of_Installed,
+	LastType = Delete
 };
 
 /**
@@ -92,22 +94,41 @@ class Cache
                                 pkgAcquireStatus* status = nullptr);
     /**
      * @brief installCandidates
-     * Installs candidates from the passed list.
+     * Processes candidates from the passed list.
+     * Type value:
+     *  * CandidateType::Update - install all the newest versions of candidates.
+     *  * CandidateType::Install - install all the candidates.
+     *  * CandidateType::Delete - remove all the candidates.
      * @param list List of candidates
+     * @param type Type
      * @param progress The pointer to the Progress object.
      * @return Result of installation.
      */
-    bool installCandidates(const CandidateList& list, Progress* progress = nullptr);
+    bool processCandidates(const CandidateList& list,
+                           CandidateType type,
+                           Progress* progress = nullptr);
 
   private:
     /**
      * @brief createCandidate
-     * Creates a new candidate using PkgIterator.
-     * @param packetIter
+     * Creates a new candidate using VerIterator.
+     * @param verIter
      * @param ok
      * @return A new candidate.
      */
-    Candidate createCandidate(pkgCache::PkgIterator packetIter, bool& ok);
+    Candidate createCandidate(pkgCache::VerIterator verIter, bool& ok);
+    /**
+     * @brief createCandidatesByType
+     * Creates a new candidate using a type and appends it to the list.
+     * @param list
+     * @param type
+     * @param ok
+     * @param progress
+     */
+    void createCandidatesByType(CandidateList& list,
+                                CandidateType type,
+                                bool& ok,
+                                Progress* progress = nullptr);
 
   private:
     bool _isValid{false};

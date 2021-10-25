@@ -19,7 +19,8 @@ set(SOURCE_FILES
     src/extension/progressrange.cpp
     src/extension/progresspulse.cpp
     src/package/progressacquirestatus.cpp
-    src/widget/logwindow.cpp)
+    src/widget/logwindow.cpp
+    src/widget/menu.cpp)
 
 set(PRIVATE_HEADER_FILES
     src/package/cache.h
@@ -34,7 +35,8 @@ set(PRIVATE_HEADER_FILES
     src/extension/progressrange.h
     src/extension/progresspulse.h
     src/package/progressacquirestatus.h
-    src/widget/logwindow.h)
+    src/widget/logwindow.h
+    src/widget/menu.h)
 
 set(CXX_PROJECT_COMPILE_FLAGS -O -fstack-protector
     -Wall -pedantic -Wextra -Wcast-align -Wcomment -Wconversion
@@ -115,11 +117,12 @@ if(GLIB_COMPILE_RESOURCES_CMD)
         DEPENDS ${CXX_COMPILED_RESOURCE_SRC_FILE} SOURCES ${CXX_RESOURCE_SRC_FILES})
 
     set(UI_FILENAME /ui/main.ui)
-if (CMAKE_BUILD_TYPE MATCHES "Debug")
-    set(UI_RESOURCE_FILE ${CXX_COMPILED_RESOURCE_SRC_FILE})
-elseif(CMAKE_BUILD_TYPE MATCHES "Release" OR CMAKE_BUILD_TYPE MATCHES "None")
-    set(UI_RESOURCE_FILE /usr/${CMAKE_INSTALL_DATAROOTDIR}/${PROJECT_NAME}/resource/${PROJECT_NAME}.gresource)
-endif()
+    if (CMAKE_BUILD_TYPE MATCHES "Debug")
+        set(UI_RESOURCE_FILE ${CXX_COMPILED_RESOURCE_SRC_FILE})
+    elseif(CMAKE_BUILD_TYPE MATCHES "Release" OR CMAKE_BUILD_TYPE MATCHES "None")
+        message(${CMAKE_INSTALL_PREFIX})
+        set(UI_RESOURCE_FILE ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_DATAROOTDIR}/${PROJECT_NAME}/resource/${PROJECT_NAME}.gresource)
+    endif()
 
     list(APPEND CXX_PROJECT_COMPILE_DEFINITIONS
         -DUI_RESOURCE_FILE=\"${UI_RESOURCE_FILE}\"
@@ -145,5 +148,8 @@ if (CMAKE_BUILD_TYPE MATCHES "Release" OR CMAKE_BUILD_TYPE MATCHES "None")
     install(TARGETS ${PROJECT_NAME} RUNTIME DESTINATION bin COMPONENT binary)
     install(FILES ${CXX_COMPILED_RESOURCE_SRC_FILE} DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/${PROJECT_NAME}/resource/)
     install(FILES ${CXX_UI_RESOURCE_FILE} DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/${PROJECT_NAME}/resource/ui/)
+    # icons
+    install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/src/resources/image DESTINATION
+        ${CMAKE_INSTALL_DATAROOTDIR}/${PROJECT_NAME}/resource/)
 endif()
 

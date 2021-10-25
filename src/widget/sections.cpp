@@ -1,5 +1,6 @@
 #include "sections.h"
 #include "candidates.h"
+#include "menu.h"
 
 #include "../package/cache.h"
 #include "../utils.h"
@@ -21,8 +22,7 @@ Sections::Sections(BaseObjectType* cobject, const ObjPtr<Gtk::Builder>& refBuild
 		render->set_fixed_size(-1, 48);
 		render->set_alignment(0.5, 0.5);
 
-		Gtk::TreeViewColumn* col =
-			Gtk::manage(new Gtk::TreeViewColumn("PACKAGES", *render));
+		Gtk::TreeViewColumn* col = Gtk::manage(new Gtk::TreeViewColumn("", *render));
 		col->add_attribute(render->property_background_rgba(), _rowData.BackgroundColor);
 		col->add_attribute(render->property_text(), _rowData.Title);
 		col->add_attribute(render->property_foreground_rgba(), _rowData.ForegroundColor);
@@ -35,12 +35,20 @@ Sections::Sections(BaseObjectType* cobject, const ObjPtr<Gtk::Builder>& refBuild
 		Gtk::TreeModel::Row row = *(_rows->append());
 
 		switch(t) {
-		case package::Installed: {
-			row[_rowData.Title] = "INSTALLED";
+		case package::List_Of_Installed: {
+			row[_rowData.Title] = "LIST OF INSTALLED";
 			break;
 		}
-		case package::Upgradable: {
-			row[_rowData.Title] = "UPGRADABLE";
+		case package::Update: {
+			row[_rowData.Title] = "UPDATE";
+			break;
+		}
+		case package::Install: {
+			row[_rowData.Title] = "INSTALL";
+			break;
+		}
+		case package::Delete: {
+			row[_rowData.Title] = "DELETE";
 			break;
 		}
 		}
@@ -77,6 +85,24 @@ void Sections::onRowSelected()
 		widget::Candidates* cand =
 			utils::GetWidgetDerived<widget::Candidates>("CandidatesTree");
 		cand->generate(static_cast<package::CandidateType>(type));
+
+		widget::Menu* menu = utils::GetCustomWidget<widget::Menu>("MainMenu");
+		if(Gtk::MenuItem* item = menu->getItem<Gtk::MenuItem>("MenuProcessAction")) {
+			switch(type) {
+			case package::Install: {
+				item->set_label("Install Selected");
+				break;
+			}
+			case package::Update: {
+				item->set_label("Update Selected");
+				break;
+			}
+			case package::Delete: {
+				item->set_label("Delete Selected");
+				break;
+			}
+			}
+		}
 	}
 }
 

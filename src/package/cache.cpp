@@ -80,29 +80,12 @@ Cache::getCandidates(CandidateType type, bool& ok, Progress* pg, pkgAcquireStatu
 	ok = true;
 
 	switch(type) {
-	case CandidateType::Installed: {
-		if(pg) pg->setRange(0, _cacheFile->GetPkgCache()->Head().PackageCount);
-
-		DEBUG() << "Generating installed packages (count: "
-				<< _cacheFile->GetPkgCache()->Head().PackageCount << "...";
-
-		for(pkgCache::GrpIterator group = _cacheFile->GetPkgCache()->GrpBegin();
-			group != _cacheFile->GetPkgCache()->GrpEnd();
-			++group) {
-			for(pkgCache::PkgIterator packet = group.PackageList(); !packet.end();
-				packet = group.NextPkg(packet)) {
-				bool okCreate;
-				Candidate newCandidate = createCandidate(packet, okCreate);
-				if(okCreate) result.push_back(newCandidate);
-
-				if(pg) pg->increment();
-			}
-		}
-		DEBUG() << "Successfully generated all the installed packages (count: "
-				<< result.size() << ").";
+	case CandidateType::List_Of_Installed:
+	case CandidateType::Delete: {
 		break;
 	}
-	case CandidateType::Upgradable: {
+	case CandidateType::Update:
+	case CandidateType::Install: {
 		DEBUG() << "Updating the package cache...";
 
 		if(pg) {
@@ -148,43 +131,89 @@ Cache::getCandidates(CandidateType type, bool& ok, Progress* pg, pkgAcquireStatu
 			break;
 		}
 
-		pkgDepCache* packetCache = _cacheFile->GetDepCache();
-		if(!packetCache) {
-			INFO() << "_cacheFile->GetDepCache() == NULL;";
-			ok = false;
-			break;
-		}
-
-		DEBUG() << "Successfully updated the package cache.";
-		if(pg) {
-			pg->setRange(0, packetCache->Head().PackageCount);
-			pg->reset();
-		}
-
-		DEBUG() << "Generating upgradable packages (count: "
-				<< _cacheFile->GetPkgCache()->Head().PackageCount << "...";
-
-		for(pkgCache::PkgIterator packet = packetCache->PkgBegin(); !packet.end();
-			++packet) {
-			pkgDepCache::StateCache& state = (*packetCache)[packet];
-			if(state.Upgradable() && packet->CurrentVer) {
-				bool okCreate;
-				Candidate newCandidate = createCandidate(packet, okCreate);
-				if(okCreate) result.push_back(newCandidate);
-
-				if(pg) pg->increment();
-			}
-		}
-		DEBUG() << "Successfully generated all the upgradable packages (count: "
-				<< result.size() << ").";
 		break;
 	}
 	}
 
+	createCandidatesByType(result, type, ok, pg);
+
+	DEBUG() << "Successfully generated all the packages (count: " << result.size()
+			<< ").";
+
 	return result;
 }
 
-bool Cache::installCandidates(const CandidateList& list, Progress* pg)
+void Cache::createCandidatesByType(CandidateList& list,
+                                   CandidateType type,
+                                   bool& ok,
+                                   Progress* pg)
+{
+	pkgCache* const packetCache = _cacheFile->GetPkgCache();
+	if(!packetCache) {
+		INFO() << "_cacheFile->GetPkgCache() == NULL;";
+		utils::PrintPkgError();
+		ok = false;
+		return;
+	}
+
+	pkgDepCache* packetDepCache = _cacheFile->GetDepCache();
+	if(!packetDepCache) {
+		INFO() << "_cacheFile->GetDepCache() == NULL;";
+		utils::PrintPkgError();
+		ok = false;
+		return;
+	}
+
+	switch(type) {
+	case CandidateType::Update:
+	case CandidateType::Install: {
+		if(!_cacheFile->GetPolicy()) {
+			INFO() << "_cacheFile->GetPolicy() == NULL";
+			utils::PrintPkgError();
+			ok = false;
+			return;
+		}
+	}
+	default: {
+		break;
+	}
+	}
+
+	DEBUG() << "Successfully updated the package cache.";
+
+	if(pg) {
+		pg->setRange(0, packetCache->Head().PackageCount);
+		pg->reset();
+	}
+
+	for(pkgCache::PkgIterator packet = packetCache->PkgBegin(); !packet.end(); ++packet) {
+		pkgDepCache::StateCache& state = (*packetDepCache)[packet];
+		pkgCache::VerIterator verIter = packet.CurrentVer();
+
+		if(pg) pg->increment();
+
+		if((!verIter && type == CandidateType::Install) ||
+		   (type == CandidateType::Update)) {
+			verIter = _cacheFile->GetPolicy()->GetCandidateVer(packet);
+		}
+
+		if(!verIter) continue;
+
+		pkgCache::PkgIterator currentPkgIter = verIter.ParentPkg();
+
+		if(((type == CandidateType::List_Of_Installed || type == CandidateType::Delete) &&
+			(currentPkgIter.CurrentVer() == verIter ||
+			 (state.CandidateVer == verIter && state.Upgradable()))) ||
+		   (type == CandidateType::Update && (state.Upgradable() && state.InstallVer)) ||
+		   (type == CandidateType::Install && !state.InstallVer)) {
+			bool okCreate = false;
+			Candidate newCandidate = createCandidate(verIter, okCreate);
+			if(okCreate) list.push_back(newCandidate);
+		}
+	}
+}
+
+bool Cache::processCandidates(const CandidateList& list, CandidateType type, Progress* pg)
 {
 	if(pg) pg->setRange(0, 7);
 
@@ -216,7 +245,7 @@ bool Cache::installCandidates(const CandidateList& list, Progress* pg)
 
 	pkgPolicy* policy = _cacheFile->GetPolicy();
 
-	size_t markInstalled = 0;
+	size_t markProcessed = 0;
 	for(pkgCache::PkgIterator pkg = depCache->PkgBegin(); !pkg.end(); ++pkg) {
 		CandidateList::const_iterator found =
 			std::find_if(list.cbegin(),
@@ -226,14 +255,31 @@ bool Cache::installCandidates(const CandidateList& list, Progress* pg)
 						 });
 
 		if(found != list.cend()) {
-			if(!depCache->MarkInstall(pkg, true, 0, false, true)) {
-				INFO() << "depCache->MarkInstall(...) == false";
-				utils::PrintPkgError();
-			} else
-				++markInstalled;
+			switch(type) {
+			case CandidateType::Update:
+			case CandidateType::Install: {
+				if(!depCache->MarkInstall(pkg, true, 0, false, true)) {
+					INFO() << "depCache->MarkInstall(...) == false";
+					utils::PrintPkgError();
+				} else
+					++markProcessed;
+
+				break;
+			}
+			case CandidateType::Delete: {
+				if(!depCache->MarkDelete(pkg, true, 0, true)) {
+					INFO() << "depCache->MarkDelete(...) == false";
+					utils::PrintPkgError();
+				} else
+					++markProcessed;
+			}
+			default: {
+				break;
+			}
+			}
 		}
 	}
-	DEBUG() << markInstalled << " packages are marked as installed.";
+	DEBUG() << markProcessed << " packages are will processed.";
 
 	if(pg) pg->increment();
 
@@ -308,7 +354,7 @@ bool Cache::installCandidates(const CandidateList& list, Progress* pg)
 	APT::Progress::PackageManager* managerProgress =
 		APT::Progress::PackageManagerProgressFactory();
 
-	if(pg) pg->setRange(0, static_cast<int>(markInstalled));
+	if(pg) pg->setRange(0, static_cast<int>(markProcessed));
 
 	DEBUG() << "Redirecting stdout and stderr to temporarily file.\n";
 	utils::RedirectLogOutputToTemporaryFile(true);
@@ -348,29 +394,23 @@ bool Cache::installCandidates(const CandidateList& list, Progress* pg)
 	return true;
 }
 
-Candidate Cache::createCandidate(pkgCache::PkgIterator packetIter, bool& ok)
+Candidate Cache::createCandidate(pkgCache::VerIterator verIter, bool& ok)
 {
 	ok = true;
 	Candidate newCandidate;
 
-	if(!_cacheFile || !_cacheFile->GetPolicy()) {
+	if(!verIter.FileList()) {
 		ok = false;
 		return newCandidate;
 	}
 
-	pkgCache::VerIterator candidate =
-		_cacheFile->GetPolicy()->GetCandidateVer(packetIter);
-
-	if(!candidate || !candidate.FileList()) {
-		ok = false;
-		return newCandidate;
-	}
+	pkgCache::PkgIterator packetIter = verIter.ParentPkg();
 
 	newCandidate.Number = packetIter.Index();
 	newCandidate.FullName = packetIter.FullName();
-	newCandidate.Version = candidate.VerStr();
+	newCandidate.Version = verIter.VerStr();
 
-	pkgCache::VerFileIterator verFileIt = candidate.FileList();
+	pkgCache::VerFileIterator verFileIt = verIter.FileList();
 	std::string archive, origin, component, architecture;
 
 	if(verFileIt.File().Archive()) newCandidate.Archive = verFileIt.File().Archive();
@@ -380,7 +420,7 @@ Candidate Cache::createCandidate(pkgCache::PkgIterator packetIter, bool& ok)
 	if(verFileIt.File().Architecture())
 		newCandidate.Architecture = verFileIt.File().Architecture();
 
-	newCandidate.SizeKB = SizeToStr(static_cast<double>(candidate->Size));
+	newCandidate.SizeKB = SizeToStr(static_cast<double>(verIter->Size));
 	newCandidate.SizeKB += "B";
 
 	return newCandidate;

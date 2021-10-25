@@ -196,4 +196,21 @@ ObjPtr<Gtk::Builder> GetBuilderUI()
 
 	return BuilderUI;
 }
+
+namespace widget
+{
+namespace property
+{
+Val Enable()
+{
+	static std::unique_ptr<bool> _p(new bool);
+	return _p.get();
+}
+
+Val Disable()
+{
+	return nullptr;
+}
+} // namespace property
+} // namespace widget
 } // namespace utils
