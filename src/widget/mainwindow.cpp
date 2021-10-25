@@ -4,6 +4,8 @@
 #include "menu.h"
 #include "../utils.h"
 
+#include <gdkmm/pixbuf.h>
+
 namespace widget
 {
 MainWindow::MainWindow(BaseObjectType* cobject, const ObjPtr<Gtk::Builder>& refBuilder) :
@@ -41,5 +43,7 @@ void MainWindow::initUI()
 	btnSearch->set_label("SEARCH");
 	btnSearch->set_tooltip_text("Open Search");
 	DEBUG() << "Widget '" << btnSearch->get_name() << "': was configured.";
+
+	set_icon(Gdk::Pixbuf::create_from_resource("/icon/package_128x128.png"));
 }
 } // namespace widget

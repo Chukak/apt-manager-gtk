@@ -3,4 +3,7 @@
     <gresource prefix="/">
         <file preprocess="xml-stripblanks">ui/main.ui</file>
     </gresource>
+    <gresource prefix="/icon">
+        <file alias="package_128x128.png">image/package_128x128.png</file>
+    </gresource>
 </gresources>
