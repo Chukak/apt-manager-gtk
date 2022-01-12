@@ -7,7 +7,7 @@ GUI for `apt update` command. Displays installed and available to update package
 
 ## Installation and Running
 
-### Ubuntu 20.04/Debian 10
+### Ubuntu 20.04/Debian 11
 
 To install the `apt-manager-gtk` from the `.deb` package, download the release you need from [Releases](https://github.com/Chukak/apt-manager-gtk/releases).
 ```bash
@@ -18,6 +18,8 @@ To run the `apt-manager-gtk`:
 ```bash
 sudo apt-manager-gtk # or apt-manager-gtk (update option not available)
 ```
+
+<b>Note</b>: If you want to install `apt-manager-gtk` on `Debian 10`, you need to manually install the `libapt-pkg6.0` package.
 
 ## Building from sources (Only Linux)
 
